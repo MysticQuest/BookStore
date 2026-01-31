@@ -36,7 +36,7 @@ public class BookFetchService : IBookFetchService
         _logger.LogInformation("Fetching books from external API: {Url}", _settings.Url);
 
         var externalBooks = await _httpClient.GetFromJsonAsync<List<ExternalBookDto>>(
-            _settings.Url, 
+            _settings.Url,
             cancellationToken);
 
         if (externalBooks == null || externalBooks.Count == 0)
@@ -77,7 +77,7 @@ public class BookFetchService : IBookFetchService
             Number = dto.Number,
             Title = dto.Title,
             OriginalTitle = dto.OriginalTitle,
-            ReleaseDate = DateTime.TryParseExact(dto.ReleaseDate, "MMM dd, yyyy",
+            ReleaseDate = DateTime.TryParseExact(dto.ReleaseDate, "MMM d, yyyy",
                 CultureInfo.InvariantCulture, DateTimeStyles.None, out var date) ? date : null,
             Description = dto.Description,
             Pages = dto.Pages,

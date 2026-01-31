@@ -12,10 +12,12 @@ namespace BookStore.Api.Controllers;
 public class BooksController : ControllerBase
 {
     private readonly IBookService _bookService;
+    private readonly IWebHostEnvironment _environment;
 
-    public BooksController(IBookService bookService)
+    public BooksController(IBookService bookService, IWebHostEnvironment environment)
     {
         _bookService = bookService;
+        _environment = environment;
     }
 
     /// <summary>
@@ -75,6 +77,26 @@ public class BooksController : ControllerBase
         if (!updated)
             return NotFound(new { message = $"Book with ID '{id}' not found." });
 
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Deletes all books from the database. Only available in Development environment.
+    /// </summary>
+    [HttpDelete]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> DeleteAllBooks(CancellationToken cancellationToken)
+    {
+        if (!_environment.IsDevelopment())
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new 
+            { 
+                message = "This endpoint is only available in Development environment." 
+            });
+        }
+
+        await _bookService.DeleteAllBooksAsync(cancellationToken);
         return NoContent();
     }
 }

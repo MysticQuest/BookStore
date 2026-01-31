@@ -48,4 +48,9 @@ public interface IBookRepository
     /// Saves all pending changes to the database.
     /// </summary>
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Deletes all books from the database. For debugging purposes only.
+    /// </summary>
+    Task DeleteAllAsync(CancellationToken cancellationToken = default);
 }

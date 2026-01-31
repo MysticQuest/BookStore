@@ -17,10 +17,14 @@ public static class DependencyInjection
     /// <summary>
     /// Adds Infrastructure layer services to the dependency injection container.
     /// </summary>
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddInfrastructure(
+        this IServiceCollection services, 
+        IConfiguration configuration,
+        string? databasePath = null)
     {
-        var connectionString = configuration.GetConnectionString("DefaultConnection") 
-            ?? "Data Source=BookStore.db";
+        var connectionString = databasePath != null
+            ? $"Data Source={databasePath}"
+            : configuration.GetConnectionString("DefaultConnection") ?? "Data Source=BookStore.db";
         
         services.AddDbContext<AppDbContext>(options =>
             options.UseSqlite(connectionString));

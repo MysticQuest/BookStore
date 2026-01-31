@@ -4,11 +4,19 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var dbFolder = Path.Combine(
+    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+    "BookStore");
+Directory.CreateDirectory(dbFolder);
+var dbPath = Path.Combine(dbFolder, "BookStore.db");
+
+Console.WriteLine($"Database location: {dbPath}");
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddInfrastructure(builder.Configuration, dbPath);
 
 builder.Services.AddCors(options =>
 {

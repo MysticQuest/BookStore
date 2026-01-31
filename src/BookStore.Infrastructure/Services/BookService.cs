@@ -52,6 +52,11 @@ public class BookService : IBookService
         return updated;
     }
 
+    public async Task DeleteAllBooksAsync(CancellationToken cancellationToken = default)
+    {
+        await _bookRepository.DeleteAllAsync(cancellationToken);
+    }
+
     private static BookDto MapToDto(Book book)
     {
         return new BookDto

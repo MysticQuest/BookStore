@@ -26,4 +26,9 @@ public interface IBookService
     /// Updates the price for a specific book.
     /// </summary>
     Task<bool> UpdatePriceAsync(Guid id, decimal price, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Deletes all books from the database. For debugging purposes only.
+    /// </summary>
+    Task DeleteAllBooksAsync(CancellationToken cancellationToken = default);
 }
