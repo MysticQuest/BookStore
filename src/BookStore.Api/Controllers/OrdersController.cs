@@ -3,6 +3,8 @@ using BookStore.Application.DTOs;
 using BookStore.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
+using static BookStore.Application.DTOs.ApiError;
+
 namespace BookStore.Api.Controllers;
 
 /// <summary>
@@ -60,9 +62,6 @@ public class OrdersController : ControllerBase
         [FromBody] CreateOrderRequest request,
         CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
         _logger.LogInformation("Creating new order for address: {Address}", request.Address);
         var order = await _orderService.CreateOrderAsync(request, cancellationToken);
         _cacheService.InvalidateOrdersCache();
@@ -95,7 +94,7 @@ public class OrdersController : ControllerBase
         if (order == null)
         {
             _logger.LogWarning("Order {OrderId} not found", id);
-            return NotFound(new { message = $"Order with ID '{id}' not found." });
+            return NotFound(ResourceNotFound("Order", id));
         }
 
         var books = await _orderService.GetOrderBooksAsync(id, cancellationToken);
@@ -116,9 +115,6 @@ public class OrdersController : ControllerBase
         [FromBody] AddBookToOrderRequest request,
         CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
         _logger.LogInformation("Adding book {BookId} to order {OrderId} with quantity {Quantity}", 
             request.BookId, id, request.Quantity);
         var (success, errorMessage) = await _orderService.AddBookToOrderAsync(id, request, cancellationToken);
@@ -127,9 +123,9 @@ public class OrdersController : ControllerBase
         {
             _logger.LogWarning("Failed to add book to order: {Error}", errorMessage);
             if (errorMessage?.Contains("not found") == true)
-                return NotFound(new { message = errorMessage });
+                return NotFound(WithMessage(errorMessage, "NOT_FOUND"));
             
-            return BadRequest(new { message = errorMessage });
+            return BadRequest(WithMessage(errorMessage ?? "Failed to add book to order.", "VALIDATION_ERROR"));
         }
 
         _cacheService.InvalidateBooksCache();
@@ -155,7 +151,7 @@ public class OrdersController : ControllerBase
         if (!removed)
         {
             _logger.LogWarning("Failed to remove book {BookId} from order {OrderId}", bookId, id);
-            return NotFound(new { message = $"Order with ID '{id}' or book with ID '{bookId}' not found in the order." });
+            return NotFound(RelationNotFound("Order", id, "Book", bookId));
         }
 
         _cacheService.InvalidateBooksCache();
@@ -180,7 +176,7 @@ public class OrdersController : ControllerBase
         if (!deleted)
         {
             _logger.LogWarning("Order {OrderId} not found for deletion", id);
-            return NotFound(new { message = $"Order with ID '{id}' not found." });
+            return NotFound(ResourceNotFound("Order", id));
         }
 
         _cacheService.InvalidateBooksCache();

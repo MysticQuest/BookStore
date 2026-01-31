@@ -1,3 +1,4 @@
+using BookStore.Application.DTOs;
 using BookStore.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -29,33 +30,23 @@ public class BookSyncController : ControllerBase
     /// This is an idempotent operation - only books with new 'Number' values are added.
     /// </summary>
     [HttpPost("fetch")]
-    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> FetchBooks(CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(FetchBooksResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status502BadGateway)]
+    public async Task<ActionResult<FetchBooksResponse>> FetchBooks(CancellationToken cancellationToken)
     {
-        try
+        _logger.LogInformation("Fetching books from external API");
+        var count = await _bookFetchService.FetchAndSaveBooksAsync(cancellationToken);
+        
+        if (count > 0)
         {
-            var count = await _bookFetchService.FetchAndSaveBooksAsync(cancellationToken);
-            
-            if (count > 0)
-                _cacheService.InvalidateBooksCache();
+            _cacheService.InvalidateBooksCache();
+            _logger.LogInformation("Added {Count} new books from external API", count);
+        }
+        else
+        {
+            _logger.LogDebug("No new books to add from external API");
+        }
 
-            return Ok(new 
-            { 
-                message = count > 0 
-                    ? $"Successfully added {count} new book(s)." 
-                    : "No new books to add. All books already exist in the database.",
-                booksAdded = count
-            });
-        }
-        catch (HttpRequestException ex)
-        {
-            _logger.LogError(ex, "Failed to fetch books from external API");
-            return StatusCode(StatusCodes.Status500InternalServerError, new 
-            { 
-                message = "Failed to fetch books from external API.",
-                error = ex.Message
-            });
-        }
+        return Ok(FetchBooksResponse.Success(count));
     }
 }
