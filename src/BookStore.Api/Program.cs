@@ -1,6 +1,7 @@
 using BookStore.Api.Hubs;
 using BookStore.Api.Jobs;
 using BookStore.Application.Interfaces;
+using BookStore.Application.Options;
 using BookStore.Infrastructure;
 using BookStore.Infrastructure.Data;
 using Hangfire;
@@ -38,13 +39,17 @@ builder.Services.AddSignalR();
 builder.Services.AddSingleton<IJobStatusService, JobStatusService>();
 builder.Services.AddSingleton<IBookHubNotifier, BookHubNotifier>();
 
+builder.Services.AddOptions<CorsSettings>()
+    .Bind(builder.Configuration.GetSection(CorsSettings.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
+var corsSettings = builder.Configuration.GetSection(CorsSettings.SectionName).Get<CorsSettings>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowBlazorClient", policy =>
     {
-        policy.WithOrigins(
-                "https://localhost:7150",
-                "http://localhost:5227")
+        policy.WithOrigins(corsSettings?.AllowedOrigins ?? [])
             .AllowAnyMethod()
             .AllowAnyHeader()
             .AllowCredentials();

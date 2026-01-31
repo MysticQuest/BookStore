@@ -41,8 +41,10 @@ public static class DependencyInjection
                 options.Retry.MaxRetryAttempts = 3;
                 options.Retry.Delay = TimeSpan.FromMilliseconds(500);
             });
-        services.Configure<BookFetchSettings>(
-            configuration.GetSection(BookFetchSettings.SectionName));
+        services.AddOptions<BookFetchSettings>()
+            .Bind(configuration.GetSection(BookFetchSettings.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
 
         services.AddScoped<IOrderRepository, OrderRepository>();
         services.AddScoped<IOrderService, OrderService>();
