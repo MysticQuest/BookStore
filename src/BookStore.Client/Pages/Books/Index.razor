@@ -424,7 +424,8 @@
             var success = await BookApi.UpdateCopiesAsync(bookId, _editCopiesValue);
             if (success)
             {
-                ShowMessage("Copies updated successfully!", false);
+                var book = _books?.FirstOrDefault(b => b.Id == bookId);
+                ShowMessage($"Copies updated successfully for book {book?.Number}!", false);
                 await LoadBooks();
             }
             else
@@ -465,7 +466,8 @@
             var success = await BookApi.UpdatePriceAsync(bookId, _editPriceValue);
             if (success)
             {
-                ShowMessage("Price updated successfully!", false);
+                var book = _books?.FirstOrDefault(b => b.Id == bookId);
+                ShowMessage($"Price updated successfully for book {book?.Number}!", false);
                 await LoadBooks();
             }
             else
