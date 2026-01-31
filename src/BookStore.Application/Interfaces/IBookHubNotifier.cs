@@ -10,10 +10,10 @@ public interface IBookHubNotifier
     /// <summary>
     /// Notifies all connected clients that books have been updated.
     /// </summary>
-    Task NotifyBooksUpdatedAsync(int booksAdded);
+    Task NotifyBooksUpdatedAsync(int booksAdded, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Notifies all connected clients about the job status.
     /// </summary>
-    Task NotifyJobStatusAsync(JobStatus status);
+    Task NotifyJobStatusAsync(JobStatus status, CancellationToken cancellationToken = default);
 }

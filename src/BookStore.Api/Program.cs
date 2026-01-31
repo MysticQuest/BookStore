@@ -100,7 +100,7 @@ app.MapHangfireDashboard("/hangfire");
 
 RecurringJob.AddOrUpdate<BookFetchJob>(
     "book-fetch-job",
-    job => job.ExecuteAsync(),
+    job => job.ExecuteAsync(CancellationToken.None),
     Cron.Minutely);
 
 app.Run();

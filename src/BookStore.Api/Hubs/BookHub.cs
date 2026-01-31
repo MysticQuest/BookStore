@@ -81,13 +81,13 @@ public class BookHubNotifier : IBookHubNotifier
         _hubContext = hubContext;
     }
 
-    public async Task NotifyBooksUpdatedAsync(int booksAdded)
+    public async Task NotifyBooksUpdatedAsync(int booksAdded, CancellationToken cancellationToken = default)
     {
-        await _hubContext.Clients.All.SendAsync("BooksUpdated", booksAdded);
+        await _hubContext.Clients.All.SendAsync("BooksUpdated", booksAdded, cancellationToken);
     }
 
-    public async Task NotifyJobStatusAsync(JobStatus status)
+    public async Task NotifyJobStatusAsync(JobStatus status, CancellationToken cancellationToken = default)
     {
-        await _hubContext.Clients.All.SendAsync("JobStatusUpdate", status);
+        await _hubContext.Clients.All.SendAsync("JobStatusUpdate", status, cancellationToken);
     }
 }
