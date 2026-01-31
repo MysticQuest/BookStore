@@ -1,3 +1,4 @@
+using BookStore.Application.Constants;
 using BookStore.Application.DTOs;
 using BookStore.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -12,10 +13,12 @@ namespace BookStore.Api.Controllers;
 public class OrdersController : ControllerBase
 {
     private readonly IOrderService _orderService;
+    private readonly ICacheService _cacheService;
 
-    public OrdersController(IOrderService orderService)
+    public OrdersController(IOrderService orderService, ICacheService cacheService)
     {
         _orderService = orderService;
+        _cacheService = cacheService;
     }
 
     /// <summary>
@@ -26,7 +29,12 @@ public class OrdersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IEnumerable<OrderDto>>> GetAllOrders(CancellationToken cancellationToken)
     {
+        var cached = _cacheService.Get<IEnumerable<OrderDto>>(CacheKeys.AllOrders);
+        if (cached != null)
+            return Ok(cached);
+
         var orders = await _orderService.GetAllOrdersAsync(cancellationToken);
+        _cacheService.Set(CacheKeys.AllOrders, orders);
         return Ok(orders);
     }
 
@@ -45,6 +53,7 @@ public class OrdersController : ControllerBase
             return BadRequest(ModelState);
 
         var order = await _orderService.CreateOrderAsync(request, cancellationToken);
+        _cacheService.InvalidateOrdersCache();
         return CreatedAtAction(nameof(GetOrderBooks), new { id = order.Id }, order);
     }
 
@@ -59,11 +68,17 @@ public class OrdersController : ControllerBase
         Guid id,
         CancellationToken cancellationToken)
     {
+        var cacheKey = CacheKeys.OrderBooks(id);
+        var cached = _cacheService.Get<IEnumerable<OrderBookDto>>(cacheKey);
+        if (cached != null)
+            return Ok(cached);
+
         var order = await _orderService.GetOrderByIdAsync(id, cancellationToken);
         if (order == null)
             return NotFound(new { message = $"Order with ID '{id}' not found." });
 
         var books = await _orderService.GetOrderBooksAsync(id, cancellationToken);
+        _cacheService.Set(cacheKey, books);
         return Ok(books);
     }
 
@@ -93,6 +108,8 @@ public class OrdersController : ControllerBase
             return BadRequest(new { message = errorMessage });
         }
 
+        _cacheService.InvalidateBooksCache();
+        _cacheService.InvalidateOrdersCache();
         return NoContent();
     }
 
@@ -113,6 +130,8 @@ public class OrdersController : ControllerBase
         if (!removed)
             return NotFound(new { message = $"Order with ID '{id}' or book with ID '{bookId}' not found in the order." });
 
+        _cacheService.InvalidateBooksCache();
+        _cacheService.InvalidateOrdersCache();
         return NoContent();
     }
 
@@ -132,6 +151,8 @@ public class OrdersController : ControllerBase
         if (!deleted)
             return NotFound(new { message = $"Order with ID '{id}' not found." });
 
+        _cacheService.InvalidateBooksCache();
+        _cacheService.InvalidateOrdersCache();
         return NoContent();
     }
 }

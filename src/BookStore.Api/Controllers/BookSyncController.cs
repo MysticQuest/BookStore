@@ -11,13 +11,16 @@ namespace BookStore.Api.Controllers;
 public class BookSyncController : ControllerBase
 {
     private readonly IBookFetchService _bookFetchService;
+    private readonly ICacheService _cacheService;
     private readonly ILogger<BookSyncController> _logger;
 
     public BookSyncController(
         IBookFetchService bookFetchService,
+        ICacheService cacheService,
         ILogger<BookSyncController> logger)
     {
         _bookFetchService = bookFetchService;
+        _cacheService = cacheService;
         _logger = logger;
     }
 
@@ -34,6 +37,9 @@ public class BookSyncController : ControllerBase
         {
             var count = await _bookFetchService.FetchAndSaveBooksAsync(cancellationToken);
             
+            if (count > 0)
+                _cacheService.InvalidateBooksCache();
+
             return Ok(new 
             { 
                 message = count > 0 

@@ -1,3 +1,4 @@
+using BookStore.Application.Constants;
 using BookStore.Application.DTOs;
 using BookStore.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -12,11 +13,13 @@ namespace BookStore.Api.Controllers;
 public class BooksController : ControllerBase
 {
     private readonly IBookService _bookService;
+    private readonly ICacheService _cacheService;
     private readonly IWebHostEnvironment _environment;
 
-    public BooksController(IBookService bookService, IWebHostEnvironment environment)
+    public BooksController(IBookService bookService, ICacheService cacheService, IWebHostEnvironment environment)
     {
         _bookService = bookService;
+        _cacheService = cacheService;
         _environment = environment;
     }
 
@@ -28,7 +31,12 @@ public class BooksController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IEnumerable<BookDto>>> GetAllBooks(CancellationToken cancellationToken)
     {
+        var cached = _cacheService.Get<IEnumerable<BookDto>>(CacheKeys.AllBooks);
+        if (cached != null)
+            return Ok(cached);
+
         var books = await _bookService.GetAllBooksAsync(cancellationToken);
+        _cacheService.Set(CacheKeys.AllBooks, books);
         return Ok(books);
     }
 
@@ -53,6 +61,7 @@ public class BooksController : ControllerBase
         if (!updated)
             return NotFound(new { message = $"Book with ID '{id}' not found." });
 
+        _cacheService.InvalidateBooksCache();
         return NoContent();
     }
 
@@ -77,6 +86,7 @@ public class BooksController : ControllerBase
         if (!updated)
             return NotFound(new { message = $"Book with ID '{id}' not found." });
 
+        _cacheService.InvalidateBooksCache();
         return NoContent();
     }
 
@@ -94,6 +104,8 @@ public class BooksController : ControllerBase
         if (!deleted)
             return NotFound(new { message = $"Book with ID '{id}' not found." });
 
+        _cacheService.InvalidateBooksCache();
+        _cacheService.InvalidateOrdersCache();
         return NoContent();
     }
 
@@ -114,6 +126,8 @@ public class BooksController : ControllerBase
         }
 
         await _bookService.DeleteAllBooksAsync(cancellationToken);
+        _cacheService.InvalidateBooksCache();
+        _cacheService.InvalidateOrdersCache();
         return NoContent();
     }
 }
