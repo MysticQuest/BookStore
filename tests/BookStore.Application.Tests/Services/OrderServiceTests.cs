@@ -1,8 +1,12 @@
 using BookStore.Application.DTOs;
 using BookStore.Application.Interfaces;
 using BookStore.Domain.Entities;
+using BookStore.Infrastructure.Data;
 using BookStore.Infrastructure.Services;
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 using Moq;
 
 namespace BookStore.Application.Tests.Services;
@@ -11,13 +15,27 @@ public class OrderServiceTests
 {
     private readonly Mock<IOrderRepository> _orderRepositoryMock;
     private readonly Mock<IBookRepository> _bookRepositoryMock;
+    private readonly Mock<AppDbContext> _dbContextMock;
     private readonly OrderService _sut;
 
     public OrderServiceTests()
     {
         _orderRepositoryMock = new Mock<IOrderRepository>();
         _bookRepositoryMock = new Mock<IBookRepository>();
-        _sut = new OrderService(_orderRepositoryMock.Object, _bookRepositoryMock.Object);
+        
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .Options;
+        _dbContextMock = new Mock<AppDbContext>(options) { CallBase = true };
+        
+        // Mock transaction for methods that use transactions
+        var transactionMock = new Mock<IDbContextTransaction>();
+        var databaseFacadeMock = new Mock<DatabaseFacade>(_dbContextMock.Object);
+        databaseFacadeMock.Setup(d => d.BeginTransactionAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(transactionMock.Object);
+        _dbContextMock.Setup(c => c.Database).Returns(databaseFacadeMock.Object);
+        
+        _sut = new OrderService(_orderRepositoryMock.Object, _bookRepositoryMock.Object, _dbContextMock.Object);
     }
 
     [Fact]
@@ -158,7 +176,6 @@ public class OrderServiceTests
         book.NumberOfCopies.Should().Be(7); // 10 - 3
         order.TotalCost.Should().Be(45.00m); // 3 * 15.00
         _orderRepositoryMock.Verify(r => r.AddOrderBookAsync(It.IsAny<OrderBook>(), It.IsAny<CancellationToken>()), Times.Once);
-        _orderRepositoryMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -227,7 +244,6 @@ public class OrderServiceTests
         book.NumberOfCopies.Should().Be(10); // 7 + 3
         order.TotalCost.Should().Be(0); // 45 - (3 * 15)
         _orderRepositoryMock.Verify(r => r.RemoveOrderBook(orderBook), Times.Once);
-        _orderRepositoryMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -283,6 +299,5 @@ public class OrderServiceTests
         book1.NumberOfCopies.Should().Be(7); // 5 + 2
         book2.NumberOfCopies.Should().Be(4); // 3 + 1
         _orderRepositoryMock.Verify(r => r.DeleteAsync(orderId, It.IsAny<CancellationToken>()), Times.Once);
-        _orderRepositoryMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 }

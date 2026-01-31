@@ -1,6 +1,7 @@
 using BookStore.Application.DTOs;
 using BookStore.Application.Interfaces;
 using BookStore.Domain.Entities;
+using BookStore.Infrastructure.Data;
 
 namespace BookStore.Infrastructure.Services;
 
@@ -11,11 +12,13 @@ public class BookService : IBookService
 {
     private readonly IBookRepository _bookRepository;
     private readonly IOrderRepository _orderRepository;
+    private readonly AppDbContext _dbContext;
 
-    public BookService(IBookRepository bookRepository, IOrderRepository orderRepository)
+    public BookService(IBookRepository bookRepository, IOrderRepository orderRepository, AppDbContext dbContext)
     {
         _bookRepository = bookRepository;
         _orderRepository = orderRepository;
+        _dbContext = dbContext;
     }
 
     public async Task<IEnumerable<BookDto>> GetAllBooksAsync(CancellationToken cancellationToken = default)
@@ -60,13 +63,21 @@ public class BookService : IBookService
         if (book == null)
             return false;
 
-        await _orderRepository.RemoveBookFromAllOrdersAsync(id, cancellationToken);
-        await _orderRepository.SaveChangesAsync(cancellationToken);
-        
-        await _bookRepository.DeleteAsync(id, cancellationToken);
-        await _bookRepository.SaveChangesAsync(cancellationToken);
-        
-        return true;
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            await _orderRepository.RemoveBookFromAllOrdersAsync(id, cancellationToken);
+            await _bookRepository.DeleteAsync(id, cancellationToken);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            
+            await transaction.CommitAsync(cancellationToken);
+            return true;
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
     }
 
     public async Task DeleteAllBooksAsync(CancellationToken cancellationToken = default)

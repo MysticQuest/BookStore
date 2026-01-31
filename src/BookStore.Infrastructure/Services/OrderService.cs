@@ -1,6 +1,7 @@
 using BookStore.Application.DTOs;
 using BookStore.Application.Interfaces;
 using BookStore.Domain.Entities;
+using BookStore.Infrastructure.Data;
 
 namespace BookStore.Infrastructure.Services;
 
@@ -11,11 +12,13 @@ public class OrderService : IOrderService
 {
     private readonly IOrderRepository _orderRepository;
     private readonly IBookRepository _bookRepository;
+    private readonly AppDbContext _dbContext;
 
-    public OrderService(IOrderRepository orderRepository, IBookRepository bookRepository)
+    public OrderService(IOrderRepository orderRepository, IBookRepository bookRepository, AppDbContext dbContext)
     {
         _orderRepository = orderRepository;
         _bookRepository = bookRepository;
+        _dbContext = dbContext;
     }
 
     public async Task<IEnumerable<OrderDto>> GetAllOrdersAsync(CancellationToken cancellationToken = default)
@@ -81,30 +84,40 @@ public class OrderService : IOrderService
         if (request.Quantity > book.NumberOfCopies)
             return (false, $"Requested quantity ({request.Quantity}) exceeds available copies ({book.NumberOfCopies}) for book '{book.Title}'.");
 
-        var existingOrderBook = await _orderRepository.GetOrderBookAsync(orderId, request.BookId, cancellationToken);
-        if (existingOrderBook != null)
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+        try
         {
-            existingOrderBook.Quantity += request.Quantity;
-            book.NumberOfCopies -= request.Quantity;
-            order.TotalCost += request.Quantity * existingOrderBook.PriceAtPurchase;
-        }
-        else
-        {
-            var orderBook = new OrderBook
+            var existingOrderBook = await _orderRepository.GetOrderBookAsync(orderId, request.BookId, cancellationToken);
+            if (existingOrderBook != null)
             {
-                OrderId = orderId,
-                BookId = request.BookId,
-                Quantity = request.Quantity,
-                PriceAtPurchase = book.Price
-            };
+                existingOrderBook.Quantity += request.Quantity;
+                book.NumberOfCopies -= request.Quantity;
+                order.TotalCost += request.Quantity * existingOrderBook.PriceAtPurchase;
+            }
+            else
+            {
+                var orderBook = new OrderBook
+                {
+                    OrderId = orderId,
+                    BookId = request.BookId,
+                    Quantity = request.Quantity,
+                    PriceAtPurchase = book.Price
+                };
 
-            await _orderRepository.AddOrderBookAsync(orderBook, cancellationToken);
-            book.NumberOfCopies -= request.Quantity;
-            order.TotalCost += request.Quantity * book.Price;
+                await _orderRepository.AddOrderBookAsync(orderBook, cancellationToken);
+                book.NumberOfCopies -= request.Quantity;
+                order.TotalCost += request.Quantity * book.Price;
+            }
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return (true, null);
         }
-
-        await _orderRepository.SaveChangesAsync(cancellationToken);
-        return (true, null);
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
     }
 
     public async Task<bool> RemoveBookFromOrderAsync(Guid orderId, Guid bookId, CancellationToken cancellationToken = default)
@@ -117,19 +130,29 @@ public class OrderService : IOrderService
         if (orderBook == null)
             return false;
 
-        var book = await _bookRepository.GetByIdAsync(bookId, cancellationToken);
-        if (book != null)
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+        try
         {
-            book.NumberOfCopies += orderBook.Quantity;
+            var book = await _bookRepository.GetByIdAsync(bookId, cancellationToken);
+            if (book != null)
+            {
+                book.NumberOfCopies += orderBook.Quantity;
+            }
+
+            order.TotalCost -= orderBook.Quantity * orderBook.PriceAtPurchase;
+            if (order.TotalCost < 0) order.TotalCost = 0;
+
+            _orderRepository.RemoveOrderBook(orderBook);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+
+            return true;
         }
-
-        order.TotalCost -= orderBook.Quantity * orderBook.PriceAtPurchase;
-        if (order.TotalCost < 0) order.TotalCost = 0;
-
-        _orderRepository.RemoveOrderBook(orderBook);
-        await _orderRepository.SaveChangesAsync(cancellationToken);
-
-        return true;
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
     }
 
     public async Task<bool> DeleteOrderAsync(Guid id, CancellationToken cancellationToken = default)
@@ -138,19 +161,29 @@ public class OrderService : IOrderService
         if (order == null)
             return false;
 
-        foreach (var orderBook in order.OrderBooks)
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+        try
         {
-            var book = await _bookRepository.GetByIdAsync(orderBook.BookId, cancellationToken);
-            if (book != null)
+            foreach (var orderBook in order.OrderBooks)
             {
-                book.NumberOfCopies += orderBook.Quantity;
+                var book = await _bookRepository.GetByIdAsync(orderBook.BookId, cancellationToken);
+                if (book != null)
+                {
+                    book.NumberOfCopies += orderBook.Quantity;
+                }
             }
+
+            await _orderRepository.DeleteAsync(id, cancellationToken);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+
+            return true;
         }
-
-        await _orderRepository.DeleteAsync(id, cancellationToken);
-        await _orderRepository.SaveChangesAsync(cancellationToken);
-
-        return true;
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
     }
 
     private static OrderDto MapToDto(Order order)

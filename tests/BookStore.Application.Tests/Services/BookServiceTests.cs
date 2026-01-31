@@ -1,7 +1,11 @@
 using BookStore.Application.Interfaces;
 using BookStore.Domain.Entities;
+using BookStore.Infrastructure.Data;
 using BookStore.Infrastructure.Services;
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 using Moq;
 
 namespace BookStore.Application.Tests.Services;
@@ -10,13 +14,27 @@ public class BookServiceTests
 {
     private readonly Mock<IBookRepository> _bookRepositoryMock;
     private readonly Mock<IOrderRepository> _orderRepositoryMock;
+    private readonly Mock<AppDbContext> _dbContextMock;
     private readonly BookService _sut;
 
     public BookServiceTests()
     {
         _bookRepositoryMock = new Mock<IBookRepository>();
         _orderRepositoryMock = new Mock<IOrderRepository>();
-        _sut = new BookService(_bookRepositoryMock.Object, _orderRepositoryMock.Object);
+        
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .Options;
+        _dbContextMock = new Mock<AppDbContext>(options) { CallBase = true };
+        
+        // Mock transaction for methods that use transactions
+        var transactionMock = new Mock<IDbContextTransaction>();
+        var databaseFacadeMock = new Mock<DatabaseFacade>(_dbContextMock.Object);
+        databaseFacadeMock.Setup(d => d.BeginTransactionAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(transactionMock.Object);
+        _dbContextMock.Setup(c => c.Database).Returns(databaseFacadeMock.Object);
+        
+        _sut = new BookService(_bookRepositoryMock.Object, _orderRepositoryMock.Object, _dbContextMock.Object);
     }
 
     [Fact]
@@ -182,8 +200,6 @@ public class BookServiceTests
         // Assert
         result.Should().BeTrue();
         _orderRepositoryMock.Verify(r => r.RemoveBookFromAllOrdersAsync(bookId, It.IsAny<CancellationToken>()), Times.Once);
-        _orderRepositoryMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         _bookRepositoryMock.Verify(r => r.DeleteAsync(bookId, It.IsAny<CancellationToken>()), Times.Once);
-        _bookRepositoryMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 }
