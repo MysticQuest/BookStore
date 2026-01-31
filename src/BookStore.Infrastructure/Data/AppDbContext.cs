@@ -70,7 +70,6 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<OrderBook>(entity =>
         {
-            // Composite primary key
             entity.HasKey(e => new { e.OrderId, e.BookId });
 
             entity.Property(e => e.Quantity)
@@ -79,7 +78,6 @@ public class AppDbContext : DbContext
             entity.Property(e => e.PriceAtPurchase)
                 .HasPrecision(18, 2);
 
-            // Relationships
             entity.HasOne(e => e.Order)
                 .WithMany(o => o.OrderBooks)
                 .HasForeignKey(e => e.OrderId)

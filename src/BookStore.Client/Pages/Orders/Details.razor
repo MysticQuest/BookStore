@@ -207,7 +207,6 @@
         _isLoading = true;
         try
         {
-            // Load order details, order books, and available books in parallel
             var ordersTask = OrderApi.GetAllOrdersAsync();
             var orderBooksTask = OrderApi.GetOrderBooksAsync(OrderId);
             var booksTask = BookApi.GetAllBooksAsync();
@@ -218,7 +217,6 @@
             _order = orders.FirstOrDefault(o => o.Id == OrderId);
             _orderBooks = await orderBooksTask;
             
-            // Filter to only books with available copies
             var allBooks = await booksTask;
             _availableBooks = allBooks.Where(b => b.NumberOfCopies > 0).ToList();
         }

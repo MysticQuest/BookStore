@@ -67,44 +67,33 @@ public class OrderService : IOrderService
         AddBookToOrderRequest request, 
         CancellationToken cancellationToken = default)
     {
-        // Get the order
         var order = await _orderRepository.GetByIdAsync(orderId, cancellationToken);
         if (order == null)
             return (false, $"Order with ID '{orderId}' not found.");
 
-        // Get the book
         var book = await _bookRepository.GetByIdAsync(request.BookId, cancellationToken);
         if (book == null)
             return (false, $"Book with ID '{request.BookId}' not found.");
 
-        // Check if book has copies available
         if (book.NumberOfCopies <= 0)
             return (false, $"Book '{book.Title}' has no copies available.");
 
-        // Check if requested quantity exceeds available copies
         if (request.Quantity > book.NumberOfCopies)
             return (false, $"Requested quantity ({request.Quantity}) exceeds available copies ({book.NumberOfCopies}) for book '{book.Title}'.");
 
-        // Check if book is already in the order
         var existingOrderBook = await _orderRepository.GetOrderBookAsync(orderId, request.BookId, cancellationToken);
         if (existingOrderBook != null)
         {
-            // Update existing entry
             var totalQuantity = existingOrderBook.Quantity + request.Quantity;
             if (totalQuantity > book.NumberOfCopies + existingOrderBook.Quantity)
                 return (false, $"Total quantity ({totalQuantity}) would exceed available copies ({book.NumberOfCopies + existingOrderBook.Quantity}) for book '{book.Title}'.");
 
             existingOrderBook.Quantity = totalQuantity;
-            
-            // Deduct copies from inventory
             book.NumberOfCopies -= request.Quantity;
-            
-            // Update order total
             order.TotalCost += request.Quantity * existingOrderBook.PriceAtPurchase;
         }
         else
         {
-            // Create new order book entry
             var orderBook = new OrderBook
             {
                 OrderId = orderId,
@@ -114,11 +103,7 @@ public class OrderService : IOrderService
             };
 
             await _orderRepository.AddOrderBookAsync(orderBook, cancellationToken);
-            
-            // Deduct copies from inventory
             book.NumberOfCopies -= request.Quantity;
-            
-            // Update order total
             order.TotalCost += request.Quantity * book.Price;
         }
 
@@ -136,14 +121,12 @@ public class OrderService : IOrderService
         if (orderBook == null)
             return false;
 
-        // Restore copies to inventory
         var book = await _bookRepository.GetByIdAsync(bookId, cancellationToken);
         if (book != null)
         {
             book.NumberOfCopies += orderBook.Quantity;
         }
 
-        // Update order total
         order.TotalCost -= orderBook.Quantity * orderBook.PriceAtPurchase;
         if (order.TotalCost < 0) order.TotalCost = 0;
 
@@ -155,12 +138,10 @@ public class OrderService : IOrderService
 
     public async Task<bool> DeleteOrderAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        // Get order with books to restore inventory
         var order = await _orderRepository.GetByIdWithBooksAsync(id, cancellationToken);
         if (order == null)
             return false;
 
-        // Restore copies for all books in the order
         foreach (var orderBook in order.OrderBooks)
         {
             var book = await _bookRepository.GetByIdAsync(orderBook.BookId, cancellationToken);

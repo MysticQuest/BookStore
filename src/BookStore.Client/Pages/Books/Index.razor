@@ -1,6 +1,9 @@
 @page "/books"
+@using Microsoft.AspNetCore.SignalR.Client
 @inject IBookApiClient BookApi
 @inject IJSRuntime JS
+@inject IConfiguration Configuration
+@implements IAsyncDisposable
 
 <PageTitle>Books - BookStore</PageTitle>
 
@@ -24,6 +27,46 @@
                 <span>Fetch Books</span>
             }
         </button>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4" style="background-color: #f8f9fa;">
+        <div class="card-body py-2 px-3">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-clock-history me-2 text-muted"></i>
+                <small class="text-muted">
+                    <strong>Fetch Job Status:</strong>
+                    @if (_jobStatus?.IsRunning == true)
+                    {
+                        <span class="ms-2">
+                            <span class="spinner-border spinner-border-sm text-primary me-1" role="status"></span>
+                            Running...
+                        </span>
+                    }
+                    else if (_jobStatus?.LastExecutionTime.HasValue == true)
+                    {
+                        <span class="ms-2">
+                            Last run: <strong>@_jobStatus.LastExecutionTime.Value.ToLocalTime().ToString("MMM d, yyyy HH:mm:ss")</strong>
+                            @if (_jobStatus.LastBooksAdded.HasValue)
+                            {
+                                <span class="badge bg-info ms-2">@_jobStatus.LastBooksAdded books added</span>
+                            }
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="ms-2 text-muted">Not yet executed</span>
+                    }
+                    @if (_hubConnection?.State == HubConnectionState.Connected)
+                    {
+                        <span class="badge bg-success ms-2"><i class="bi bi-broadcast me-1"></i>Live</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary ms-2"><i class="bi bi-broadcast me-1"></i>Disconnected</span>
+                    }
+                </small>
+            </div>
+        </div>
     </div>
 
     @if (!string.IsNullOrEmpty(_message))
@@ -218,23 +261,67 @@
     private string? _message;
     private bool _isError = false;
 
-    // Edit state for copies
     private Guid? _editingCopiesId;
     private int _editCopiesValue;
-
-    // Edit state for price
     private Guid? _editingPriceId;
     private decimal _editPriceValue;
-
-    // Expanded description state
     private Guid? _expandedDescriptionId;
-
-    // Track which books have truncated descriptions
     private HashSet<Guid> _truncatedBooks = new();
+    private HubConnection? _hubConnection;
+    private JobStatus? _jobStatus;
+
+    private class JobStatus
+    {
+        public DateTime? LastExecutionTime { get; set; }
+        public int? LastBooksAdded { get; set; }
+        public bool IsRunning { get; set; }
+    }
 
     protected override async Task OnInitializedAsync()
     {
         await LoadBooks();
+        await StartSignalRConnection();
+    }
+
+    private async Task StartSignalRConnection()
+    {
+        var apiBaseAddress = Configuration["ApiBaseAddress"] ?? "http://localhost:5029";
+        var hubUrl = $"{apiBaseAddress}/hubs/books";
+
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl(hubUrl)
+            .WithAutomaticReconnect()
+            .Build();
+
+        _hubConnection.On<int>("BooksUpdated", async (booksAdded) =>
+        {
+            ShowMessage($"{booksAdded} new book(s) added by scheduled job. Refreshing...", false);
+            await LoadBooks();
+            await InvokeAsync(StateHasChanged);
+        });
+
+        _hubConnection.On<JobStatus>("JobStatusUpdate", async (status) =>
+        {
+            _jobStatus = status;
+            await InvokeAsync(StateHasChanged);
+        });
+
+        try
+        {
+            await _hubConnection.StartAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"SignalR connection failed: {ex.Message}");
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.DisposeAsync();
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -270,7 +357,6 @@
             }
             catch
             {
-                // Element might not exist yet
             }
         }
 

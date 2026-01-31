@@ -51,7 +51,6 @@ public class OrderApiClient : IOrderApiClient
             return (true, null);
         }
 
-        // Try to extract error message from response
         try
         {
             var errorContent = await response.Content.ReadAsStringAsync();

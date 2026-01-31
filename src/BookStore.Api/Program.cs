@@ -1,5 +1,9 @@
+using BookStore.Api.Hubs;
+using BookStore.Api.Jobs;
 using BookStore.Infrastructure;
 using BookStore.Infrastructure.Data;
+using Hangfire;
+using Hangfire.InMemory;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,6 +22,19 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddInfrastructure(builder.Configuration, dbPath);
 
+builder.Services.AddHangfire(config => config
+    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+    .UseSimpleAssemblyNameTypeSerializer()
+    .UseRecommendedSerializerSettings()
+    .UseInMemoryStorage());
+
+builder.Services.AddHangfireServer();
+builder.Services.AddScoped<BookFetchJob>();
+
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<IJobStatusService, JobStatusService>();
+builder.Services.AddSingleton<IBookHubNotifier, BookHubNotifier>();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowBlazorClient", policy =>
@@ -26,13 +43,13 @@ builder.Services.AddCors(options =>
                 "https://localhost:7150",
                 "http://localhost:5227")
             .AllowAnyMethod()
-            .AllowAnyHeader();
+            .AllowAnyHeader()
+            .AllowCredentials();
     });
 });
 
 var app = builder.Build();
 
-// Apply pending migrations on startup
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -52,5 +69,13 @@ if (!app.Environment.IsDevelopment())
 
 app.UseCors("AllowBlazorClient");
 app.MapControllers();
+app.MapHub<BookHub>("/hubs/books");
+
+app.MapHangfireDashboard("/hangfire");
+
+RecurringJob.AddOrUpdate<BookFetchJob>(
+    "book-fetch-job",
+    job => job.ExecuteAsync(),
+    Cron.Minutely);
 
 app.Run();
