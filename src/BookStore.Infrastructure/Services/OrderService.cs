@@ -2,6 +2,7 @@ using BookStore.Application.DTOs;
 using BookStore.Application.Interfaces;
 using BookStore.Domain.Entities;
 using BookStore.Infrastructure.Data;
+using Microsoft.Extensions.Logging;
 
 namespace BookStore.Infrastructure.Services;
 
@@ -13,12 +14,18 @@ public class OrderService : IOrderService
     private readonly IOrderRepository _orderRepository;
     private readonly IBookRepository _bookRepository;
     private readonly AppDbContext _dbContext;
+    private readonly ILogger<OrderService> _logger;
 
-    public OrderService(IOrderRepository orderRepository, IBookRepository bookRepository, AppDbContext dbContext)
+    public OrderService(
+        IOrderRepository orderRepository, 
+        IBookRepository bookRepository, 
+        AppDbContext dbContext,
+        ILogger<OrderService> logger)
     {
         _orderRepository = orderRepository;
         _bookRepository = bookRepository;
         _dbContext = dbContext;
+        _logger = logger;
     }
 
     public async Task<IEnumerable<OrderDto>> GetAllOrdersAsync(CancellationToken cancellationToken = default)
@@ -90,12 +97,14 @@ public class OrderService : IOrderService
             var existingOrderBook = await _orderRepository.GetOrderBookAsync(orderId, request.BookId, cancellationToken);
             if (existingOrderBook != null)
             {
+                _logger.LogDebug("Updating existing order book entry for order {OrderId}, book {BookId}", orderId, request.BookId);
                 existingOrderBook.Quantity += request.Quantity;
                 book.NumberOfCopies -= request.Quantity;
                 order.TotalCost += request.Quantity * existingOrderBook.PriceAtPurchase;
             }
             else
             {
+                _logger.LogDebug("Adding new book {BookId} to order {OrderId}", request.BookId, orderId);
                 var orderBook = new OrderBook
                 {
                     OrderId = orderId,
@@ -113,8 +122,9 @@ public class OrderService : IOrderService
             await transaction.CommitAsync(cancellationToken);
             return (true, null);
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to add book {BookId} to order {OrderId}", request.BookId, orderId);
             await transaction.RollbackAsync(cancellationToken);
             throw;
         }
@@ -136,6 +146,7 @@ public class OrderService : IOrderService
             var book = await _bookRepository.GetByIdAsync(bookId, cancellationToken);
             if (book != null)
             {
+                _logger.LogDebug("Restoring {Quantity} copies to book {BookId}", orderBook.Quantity, bookId);
                 book.NumberOfCopies += orderBook.Quantity;
             }
 
@@ -148,8 +159,9 @@ public class OrderService : IOrderService
 
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to remove book {BookId} from order {OrderId}", bookId, orderId);
             await transaction.RollbackAsync(cancellationToken);
             throw;
         }
@@ -164,6 +176,7 @@ public class OrderService : IOrderService
         await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
         try
         {
+            _logger.LogDebug("Restoring inventory for {Count} books from order {OrderId}", order.OrderBooks.Count, id);
             foreach (var orderBook in order.OrderBooks)
             {
                 var book = await _bookRepository.GetByIdAsync(orderBook.BookId, cancellationToken);
@@ -179,8 +192,9 @@ public class OrderService : IOrderService
 
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to delete order {OrderId}", id);
             await transaction.RollbackAsync(cancellationToken);
             throw;
         }

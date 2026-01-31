@@ -15,12 +15,18 @@ public class BooksController : ControllerBase
     private readonly IBookService _bookService;
     private readonly ICacheService _cacheService;
     private readonly IWebHostEnvironment _environment;
+    private readonly ILogger<BooksController> _logger;
 
-    public BooksController(IBookService bookService, ICacheService cacheService, IWebHostEnvironment environment)
+    public BooksController(
+        IBookService bookService, 
+        ICacheService cacheService, 
+        IWebHostEnvironment environment,
+        ILogger<BooksController> logger)
     {
         _bookService = bookService;
         _cacheService = cacheService;
         _environment = environment;
+        _logger = logger;
     }
 
     /// <summary>
@@ -31,12 +37,18 @@ public class BooksController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IEnumerable<BookDto>>> GetAllBooks(CancellationToken cancellationToken)
     {
+        _logger.LogDebug("Retrieving all books");
+        
         var cached = _cacheService.Get<IEnumerable<BookDto>>(CacheKeys.AllBooks);
         if (cached != null)
+        {
+            _logger.LogDebug("Returning books from cache");
             return Ok(cached);
+        }
 
         var books = await _bookService.GetAllBooksAsync(cancellationToken);
         _cacheService.Set(CacheKeys.AllBooks, books);
+        _logger.LogDebug("Retrieved {Count} books from database", books.Count());
         return Ok(books);
     }
 
@@ -56,10 +68,14 @@ public class BooksController : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
+        _logger.LogInformation("Updating copies for book {BookId} to {Copies}", id, request.NumberOfCopies);
         var updated = await _bookService.UpdateNumberOfCopiesAsync(id, request.NumberOfCopies, cancellationToken);
 
         if (!updated)
+        {
+            _logger.LogWarning("Book {BookId} not found for copies update", id);
             return NotFound(new { message = $"Book with ID '{id}' not found." });
+        }
 
         _cacheService.InvalidateBooksCache();
         return NoContent();
@@ -81,10 +97,14 @@ public class BooksController : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
+        _logger.LogInformation("Updating price for book {BookId} to {Price}", id, request.Price);
         var updated = await _bookService.UpdatePriceAsync(id, request.Price, cancellationToken);
 
         if (!updated)
+        {
+            _logger.LogWarning("Book {BookId} not found for price update", id);
             return NotFound(new { message = $"Book with ID '{id}' not found." });
+        }
 
         _cacheService.InvalidateBooksCache();
         return NoContent();
@@ -99,13 +119,18 @@ public class BooksController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> DeleteBook(Guid id, CancellationToken cancellationToken)
     {
+        _logger.LogInformation("Deleting book {BookId}", id);
         var deleted = await _bookService.DeleteBookAsync(id, cancellationToken);
 
         if (!deleted)
+        {
+            _logger.LogWarning("Book {BookId} not found for deletion", id);
             return NotFound(new { message = $"Book with ID '{id}' not found." });
+        }
 
         _cacheService.InvalidateBooksCache();
         _cacheService.InvalidateOrdersCache();
+        _logger.LogInformation("Book {BookId} deleted successfully", id);
         return NoContent();
     }
 
@@ -119,15 +144,18 @@ public class BooksController : ControllerBase
     {
         if (!_environment.IsDevelopment())
         {
+            _logger.LogWarning("Attempted to delete all books in non-development environment");
             return StatusCode(StatusCodes.Status403Forbidden, new 
             { 
                 message = "This endpoint is only available in Development environment." 
             });
         }
 
+        _logger.LogWarning("Deleting all books from database");
         await _bookService.DeleteAllBooksAsync(cancellationToken);
         _cacheService.InvalidateBooksCache();
         _cacheService.InvalidateOrdersCache();
+        _logger.LogWarning("All books deleted from database");
         return NoContent();
     }
 }

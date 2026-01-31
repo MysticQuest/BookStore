@@ -1,4 +1,3 @@
-using BookStore.Api.Hubs;
 using BookStore.Application.Interfaces;
 
 namespace BookStore.Api.Jobs;

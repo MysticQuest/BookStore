@@ -1,3 +1,5 @@
+using BookStore.Application.DTOs;
+using BookStore.Application.Interfaces;
 using Microsoft.AspNetCore.SignalR;
 
 namespace BookStore.Api.Hubs;
@@ -23,26 +25,6 @@ public class BookHub : Hub
         await Clients.Caller.SendAsync("JobStatusUpdate", status);
         await base.OnConnectedAsync();
     }
-}
-
-/// <summary>
-/// Represents the status of the book fetch job.
-/// </summary>
-public class JobStatus
-{
-    public DateTime? LastExecutionTime { get; set; }
-    public int? LastBooksAdded { get; set; }
-    public bool IsRunning { get; set; }
-}
-
-/// <summary>
-/// Service to track job status.
-/// </summary>
-public interface IJobStatusService
-{
-    JobStatus GetStatus();
-    void SetRunning(bool isRunning);
-    void SetCompleted(DateTime executionTime, int booksAdded);
 }
 
 /// <summary>
@@ -85,22 +67,6 @@ public class JobStatusService : IJobStatusService
             _isRunning = false;
         }
     }
-}
-
-/// <summary>
-/// Interface for sending book notifications to clients.
-/// </summary>
-public interface IBookHubNotifier
-{
-    /// <summary>
-    /// Notifies all connected clients that books have been updated.
-    /// </summary>
-    Task NotifyBooksUpdatedAsync(int booksAdded);
-
-    /// <summary>
-    /// Notifies all connected clients about the job status.
-    /// </summary>
-    Task NotifyJobStatusAsync(JobStatus status);
 }
 
 /// <summary>

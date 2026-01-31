@@ -1,5 +1,6 @@
 using BookStore.Api.Hubs;
 using BookStore.Api.Jobs;
+using BookStore.Application.Interfaces;
 using BookStore.Infrastructure;
 using BookStore.Infrastructure.Data;
 using Hangfire;
