@@ -65,7 +65,14 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await dbContext.Database.MigrateAsync();
+    if (dbContext.Database.IsRelational())
+    {
+        await dbContext.Database.MigrateAsync();
+    }
+    else
+    {
+        await dbContext.Database.EnsureCreatedAsync();
+    }
 }
 
 app.UseGlobalExceptionHandler();
@@ -98,3 +105,9 @@ RecurringJob.AddOrUpdate<BookFetchJob>(
     Cron.Minutely);
 
 app.Run();
+
+/// <summary>
+/// Entry point class for the API application.
+/// Made public partial for integration testing with WebApplicationFactory.
+/// </summary>
+public partial class Program { }
