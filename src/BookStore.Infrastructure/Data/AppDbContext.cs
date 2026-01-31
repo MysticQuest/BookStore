@@ -13,6 +13,8 @@ public class AppDbContext : DbContext
     }
 
     public DbSet<Book> Books => Set<Book>();
+    public DbSet<Order> Orders => Set<Order>();
+    public DbSet<OrderBook> OrderBooks => Set<OrderBook>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -46,6 +48,47 @@ public class AppDbContext : DbContext
 
             entity.Property(e => e.Price)
                 .HasPrecision(18, 2);
+        });
+
+        modelBuilder.Entity<Order>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id)
+                .ValueGeneratedOnAdd();
+
+            entity.Property(e => e.Address)
+                .IsRequired()
+                .HasMaxLength(500);
+
+            entity.Property(e => e.CreationDate)
+                .IsRequired();
+
+            entity.Property(e => e.TotalCost)
+                .HasPrecision(18, 2);
+        });
+
+        modelBuilder.Entity<OrderBook>(entity =>
+        {
+            // Composite primary key
+            entity.HasKey(e => new { e.OrderId, e.BookId });
+
+            entity.Property(e => e.Quantity)
+                .IsRequired();
+
+            entity.Property(e => e.PriceAtPurchase)
+                .HasPrecision(18, 2);
+
+            // Relationships
+            entity.HasOne(e => e.Order)
+                .WithMany(o => o.OrderBooks)
+                .HasForeignKey(e => e.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Book)
+                .WithMany(b => b.OrderBooks)
+                .HasForeignKey(e => e.BookId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

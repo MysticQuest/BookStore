@@ -29,11 +29,16 @@ public static class DependencyInjection
         services.AddDbContext<AppDbContext>(options =>
             options.UseSqlite(connectionString));
 
+        // Book services
         services.AddScoped<IBookRepository, BookRepository>();
         services.AddScoped<IBookService, BookService>();
         services.AddHttpClient<IBookFetchService, BookFetchService>();
         services.Configure<BookFetchSettings>(
             configuration.GetSection(BookFetchSettings.SectionName));
+
+        // Order services
+        services.AddScoped<IOrderRepository, OrderRepository>();
+        services.AddScoped<IOrderService, OrderService>();
 
         return services;
     }

@@ -17,7 +17,8 @@ builder.Services.AddScoped(sp => new HttpClient
     BaseAddress = new Uri(apiBaseAddress) 
 });
 
-// Register API client
+// Register API clients
 builder.Services.AddScoped<IBookApiClient, BookApiClient>();
+builder.Services.AddScoped<IOrderApiClient, OrderApiClient>();
 
 await builder.Build().RunAsync();

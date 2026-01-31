@@ -59,4 +59,9 @@ public class Book
     /// The price of the book.
     /// </summary>
     public decimal Price { get; set; }
+
+    /// <summary>
+    /// The orders that include this book.
+    /// </summary>
+    public ICollection<OrderBook> OrderBooks { get; set; } = new List<OrderBook>();
 }
