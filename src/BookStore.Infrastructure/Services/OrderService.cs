@@ -42,9 +42,19 @@ public class OrderService : IOrderService
 
     public async Task<OrderDto> CreateOrderAsync(CreateOrderRequest request, CancellationToken cancellationToken = default)
     {
+        if (request.Id.HasValue)
+        {
+            var existing = await _orderRepository.GetByIdAsync(request.Id.Value, cancellationToken);
+            if (existing != null)
+            {
+                _logger.LogDebug("Returning existing order {OrderId} for idempotent request", existing.Id);
+                return MapToDto(existing);
+            }
+        }
+
         var order = new Order
         {
-            Id = Guid.NewGuid(),
+            Id = request.Id ?? Guid.NewGuid(),
             Address = request.Address,
             CreationDate = DateTime.UtcNow,
             TotalCost = 0

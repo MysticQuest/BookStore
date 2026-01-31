@@ -24,7 +24,7 @@ public class OrderApiClient : IOrderApiClient
 
     public async Task<OrderViewModel?> CreateOrderAsync(CreateOrderViewModel model)
     {
-        var request = new { Address = model.Address };
+        var request = new { Id = model.Id, Address = model.Address };
         var response = await _httpClient.PostAsJsonAsync("api/orders", request);
 
         if (response.IsSuccessStatusCode)

@@ -64,6 +64,80 @@ public class OrderServiceTests
     }
 
     [Fact]
+    public async Task CreateOrderAsync_WithClientProvidedId_UsesProvidedId()
+    {
+        // Arrange
+        var clientId = Guid.NewGuid();
+        var request = new CreateOrderRequest { Id = clientId, Address = "123 Main Street" };
+        Order? capturedOrder = null;
+        
+        _orderRepositoryMock.Setup(r => r.GetByIdAsync(clientId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Order?)null);
+        _orderRepositoryMock.Setup(r => r.AddAsync(It.IsAny<Order>(), It.IsAny<CancellationToken>()))
+            .Callback<Order, CancellationToken>((order, _) => capturedOrder = order)
+            .Returns(Task.CompletedTask);
+
+        // Act
+        var result = await _sut.CreateOrderAsync(request);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Id.Should().Be(clientId);
+        capturedOrder.Should().NotBeNull();
+        capturedOrder!.Id.Should().Be(clientId);
+    }
+
+    [Fact]
+    public async Task CreateOrderAsync_WithExistingId_ReturnsExistingOrder_Idempotent()
+    {
+        // Arrange
+        var existingId = Guid.NewGuid();
+        var existingOrder = new Order 
+        { 
+            Id = existingId, 
+            Address = "Existing Address", 
+            CreationDate = DateTime.UtcNow.AddMinutes(-5),
+            TotalCost = 0 
+        };
+        var request = new CreateOrderRequest { Id = existingId, Address = "New Address" };
+        
+        _orderRepositoryMock.Setup(r => r.GetByIdAsync(existingId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existingOrder);
+
+        // Act
+        var result = await _sut.CreateOrderAsync(request);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Id.Should().Be(existingId);
+        result.Address.Should().Be("Existing Address"); // Returns existing, not new
+        _orderRepositoryMock.Verify(r => r.AddAsync(It.IsAny<Order>(), It.IsAny<CancellationToken>()), Times.Never);
+        _orderRepositoryMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CreateOrderAsync_WithoutId_GeneratesNewId()
+    {
+        // Arrange
+        var request = new CreateOrderRequest { Address = "123 Main Street" }; // No Id provided
+        Order? capturedOrder = null;
+        
+        _orderRepositoryMock.Setup(r => r.AddAsync(It.IsAny<Order>(), It.IsAny<CancellationToken>()))
+            .Callback<Order, CancellationToken>((order, _) => capturedOrder = order)
+            .Returns(Task.CompletedTask);
+
+        // Act
+        var result = await _sut.CreateOrderAsync(request);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Id.Should().NotBeEmpty();
+        capturedOrder.Should().NotBeNull();
+        capturedOrder!.Id.Should().NotBeEmpty();
+        _orderRepositoryMock.Verify(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
     public async Task AddBookToOrderAsync_Fails_WhenOrderDoesNotExist()
     {
         // Arrange
