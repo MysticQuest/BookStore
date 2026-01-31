@@ -53,7 +53,7 @@ public class Book
     /// <summary>
     /// The available number of copies in inventory.
     /// </summary>
-    public int NumberOfCopies { get; set; }
+    public int NumberOfCopies { get; set; } = 1;
 
     /// <summary>
     /// The price of the book.

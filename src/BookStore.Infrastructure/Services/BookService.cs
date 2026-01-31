@@ -10,10 +10,12 @@ namespace BookStore.Infrastructure.Services;
 public class BookService : IBookService
 {
     private readonly IBookRepository _bookRepository;
+    private readonly IOrderRepository _orderRepository;
 
-    public BookService(IBookRepository bookRepository)
+    public BookService(IBookRepository bookRepository, IOrderRepository orderRepository)
     {
         _bookRepository = bookRepository;
+        _orderRepository = orderRepository;
     }
 
     public async Task<IEnumerable<BookDto>> GetAllBooksAsync(CancellationToken cancellationToken = default)
@@ -54,14 +56,15 @@ public class BookService : IBookService
 
     public async Task<bool> DeleteBookAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var deleted = await _bookRepository.DeleteAsync(id, cancellationToken);
+        var book = await _bookRepository.GetByIdAsync(id, cancellationToken);
+        if (book == null)
+            return false;
+
+        await _orderRepository.RemoveBookFromAllOrdersAsync(id, cancellationToken);
+        await _bookRepository.DeleteAsync(id, cancellationToken);
+        await _bookRepository.SaveChangesAsync(cancellationToken);
         
-        if (deleted)
-        {
-            await _bookRepository.SaveChangesAsync(cancellationToken);
-        }
-        
-        return deleted;
+        return true;
     }
 
     public async Task DeleteAllBooksAsync(CancellationToken cancellationToken = default)

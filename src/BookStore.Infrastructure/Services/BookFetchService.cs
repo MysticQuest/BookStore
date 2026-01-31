@@ -83,7 +83,7 @@ public class BookFetchService : IBookFetchService
             Pages = dto.Pages,
             Cover = dto.Cover,
             Index = dto.Index,
-            NumberOfCopies = 0,
+            NumberOfCopies = 1,
             Price = 0
         };
     }

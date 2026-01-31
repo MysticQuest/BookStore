@@ -48,6 +48,11 @@ public interface IOrderRepository
     Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Removes a book from all orders and updates order totals.
+    /// </summary>
+    Task RemoveBookFromAllOrdersAsync(Guid bookId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Saves all pending changes to the database.
     /// </summary>
     Task SaveChangesAsync(CancellationToken cancellationToken = default);

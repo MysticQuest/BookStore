@@ -74,6 +74,22 @@ public class OrderRepository : IOrderRepository
         return true;
     }
 
+    public async Task RemoveBookFromAllOrdersAsync(Guid bookId, CancellationToken cancellationToken = default)
+    {
+        var orderBooks = await _context.OrderBooks
+            .Include(ob => ob.Order)
+            .Where(ob => ob.BookId == bookId)
+            .ToListAsync(cancellationToken);
+
+        foreach (var orderBook in orderBooks)
+        {
+            orderBook.Order.TotalCost -= orderBook.Quantity * orderBook.PriceAtPurchase;
+            if (orderBook.Order.TotalCost < 0) orderBook.Order.TotalCost = 0;
+        }
+
+        _context.OrderBooks.RemoveRange(orderBooks);
+    }
+
     public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         await _context.SaveChangesAsync(cancellationToken);
