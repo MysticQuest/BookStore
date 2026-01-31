@@ -1,4 +1,3 @@
-using BookStore.Application;
 using BookStore.Infrastructure;
 using BookStore.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -8,7 +7,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
-builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.AddCors(options =>
@@ -25,10 +23,11 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// Apply pending migrations on startup
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await dbContext.Database.EnsureCreatedAsync();
+    await dbContext.Database.MigrateAsync();
 }
 
 if (app.Environment.IsDevelopment())
