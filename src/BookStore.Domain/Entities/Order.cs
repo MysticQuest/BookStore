@@ -29,4 +29,9 @@ public class Order
     /// The books included in this order.
     /// </summary>
     public ICollection<OrderBook> OrderBooks { get; set; } = new List<OrderBook>();
+
+    /// <summary>
+    /// Concurrency token for optimistic locking.
+    /// </summary>
+    public byte[] RowVersion { get; set; } = [];
 }

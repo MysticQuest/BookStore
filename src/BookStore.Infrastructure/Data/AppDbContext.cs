@@ -48,6 +48,10 @@ public class AppDbContext : DbContext
 
             entity.Property(e => e.Price)
                 .HasPrecision(18, 2);
+
+            entity.Property(e => e.RowVersion)
+                .IsRowVersion()
+                .IsConcurrencyToken();
         });
 
         modelBuilder.Entity<Order>(entity =>
@@ -66,6 +70,10 @@ public class AppDbContext : DbContext
 
             entity.Property(e => e.TotalCost)
                 .HasPrecision(18, 2);
+
+            entity.Property(e => e.RowVersion)
+                .IsRowVersion()
+                .IsConcurrencyToken();
         });
 
         modelBuilder.Entity<OrderBook>(entity =>

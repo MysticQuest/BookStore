@@ -64,4 +64,9 @@ public class Book
     /// The orders that include this book.
     /// </summary>
     public ICollection<OrderBook> OrderBooks { get; set; } = new List<OrderBook>();
+
+    /// <summary>
+    /// Concurrency token for optimistic locking.
+    /// </summary>
+    public byte[] RowVersion { get; set; } = [];
 }
