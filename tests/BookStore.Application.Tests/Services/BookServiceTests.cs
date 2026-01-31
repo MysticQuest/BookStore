@@ -6,6 +6,7 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace BookStore.Application.Tests.Services;
@@ -15,26 +16,27 @@ public class BookServiceTests
     private readonly Mock<IBookRepository> _bookRepositoryMock;
     private readonly Mock<IOrderRepository> _orderRepositoryMock;
     private readonly Mock<AppDbContext> _dbContextMock;
+    private readonly Mock<ILogger<BookService>> _loggerMock;
     private readonly BookService _sut;
 
     public BookServiceTests()
     {
         _bookRepositoryMock = new Mock<IBookRepository>();
         _orderRepositoryMock = new Mock<IOrderRepository>();
+        _loggerMock = new Mock<ILogger<BookService>>();
         
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
         _dbContextMock = new Mock<AppDbContext>(options) { CallBase = true };
         
-        // Mock transaction for methods that use transactions
         var transactionMock = new Mock<IDbContextTransaction>();
         var databaseFacadeMock = new Mock<DatabaseFacade>(_dbContextMock.Object);
         databaseFacadeMock.Setup(d => d.BeginTransactionAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(transactionMock.Object);
         _dbContextMock.Setup(c => c.Database).Returns(databaseFacadeMock.Object);
         
-        _sut = new BookService(_bookRepositoryMock.Object, _orderRepositoryMock.Object, _dbContextMock.Object);
+        _sut = new BookService(_bookRepositoryMock.Object, _orderRepositoryMock.Object, _dbContextMock.Object, _loggerMock.Object);
     }
 
     [Fact]
