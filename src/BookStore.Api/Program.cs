@@ -88,10 +88,6 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseCors("AllowBlazorClient");
-
-app.UseBlazorFrameworkFiles();
-app.UseStaticFiles();
-
 app.MapControllers();
 app.MapHub<BookHub>("/hubs/books");
 
@@ -106,8 +102,6 @@ RecurringJob.AddOrUpdate<BookFetchJob>(
     "book-fetch-job",
     job => job.ExecuteAsync(),
     Cron.Minutely);
-
-app.MapFallbackToFile("index.html");
 
 app.Run();
 

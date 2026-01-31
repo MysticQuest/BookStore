@@ -7,12 +7,8 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-var hostAddress = builder.HostEnvironment.BaseAddress;
-var isLocalhost = hostAddress.Contains("localhost") || hostAddress.Contains("127.0.0.1");
-
-var apiBaseAddress = isLocalhost
-    ? builder.Configuration["ApiBaseAddress"] ?? "http://localhost:5029"
-    : builder.Configuration["ProductionApiBaseAddress"] ?? hostAddress;
+var apiBaseAddress = builder.Configuration["ApiBaseAddress"] 
+    ?? "http://localhost:5029";
 
 builder.Services.AddScoped(sp => new HttpClient 
 { 
