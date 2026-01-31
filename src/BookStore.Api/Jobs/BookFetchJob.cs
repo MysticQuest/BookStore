@@ -11,17 +11,20 @@ public class BookFetchJob
     private readonly IBookFetchService _bookFetchService;
     private readonly IBookHubNotifier _bookHubNotifier;
     private readonly IJobStatusService _jobStatusService;
+    private readonly ICacheService _cacheService;
     private readonly ILogger<BookFetchJob> _logger;
 
     public BookFetchJob(
         IBookFetchService bookFetchService, 
         IBookHubNotifier bookHubNotifier,
         IJobStatusService jobStatusService,
+        ICacheService cacheService,
         ILogger<BookFetchJob> logger)
     {
         _bookFetchService = bookFetchService;
         _bookHubNotifier = bookHubNotifier;
         _jobStatusService = jobStatusService;
+        _cacheService = cacheService;
         _logger = logger;
     }
 
@@ -48,6 +51,7 @@ public class BookFetchJob
 
             if (booksAdded > 0)
             {
+                _cacheService.InvalidateBooksCache();
                 await _bookHubNotifier.NotifyBooksUpdatedAsync(booksAdded);
                 _logger.LogInformation("Notified clients about {BooksAdded} new books.", booksAdded);
             }

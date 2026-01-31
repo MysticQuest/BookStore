@@ -61,6 +61,8 @@ public class BookService : IBookService
             return false;
 
         await _orderRepository.RemoveBookFromAllOrdersAsync(id, cancellationToken);
+        await _orderRepository.SaveChangesAsync(cancellationToken);
+        
         await _bookRepository.DeleteAsync(id, cancellationToken);
         await _bookRepository.SaveChangesAsync(cancellationToken);
         

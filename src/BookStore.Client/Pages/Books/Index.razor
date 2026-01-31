@@ -295,7 +295,7 @@
 
         _hubConnection.On<int>("BooksUpdated", async (booksAdded) =>
         {
-            ShowMessage($"{booksAdded} new book(s) added by scheduled job. Refreshing...", false);
+            ShowMessage($"{booksAdded} new book(s) added by scheduled job.", false);
             await LoadBooks();
             await InvokeAsync(StateHasChanged);
         });
