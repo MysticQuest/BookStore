@@ -1,5 +1,6 @@
 using BookStore.Api.Hubs;
 using BookStore.Api.Jobs;
+using BookStore.Api.Middleware;
 using BookStore.Application.Interfaces;
 using BookStore.Application.Options;
 using BookStore.Infrastructure;
@@ -66,6 +67,8 @@ using (var scope = app.Services.CreateScope())
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await dbContext.Database.MigrateAsync();
 }
+
+app.UseGlobalExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {
