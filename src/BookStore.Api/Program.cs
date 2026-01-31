@@ -23,8 +23,8 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowBlazorClient", policy =>
     {
         policy.WithOrigins(
-                "https://localhost:7001",
-                "http://localhost:5001")
+                "https://localhost:7150",
+                "http://localhost:5227")
             .AllowAnyMethod()
             .AllowAnyHeader();
     });
@@ -45,7 +45,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseCors("AllowBlazorClient");
 app.MapControllers();
 

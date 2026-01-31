@@ -52,6 +52,18 @@ public class BookService : IBookService
         return updated;
     }
 
+    public async Task<bool> DeleteBookAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var deleted = await _bookRepository.DeleteAsync(id, cancellationToken);
+        
+        if (deleted)
+        {
+            await _bookRepository.SaveChangesAsync(cancellationToken);
+        }
+        
+        return deleted;
+    }
+
     public async Task DeleteAllBooksAsync(CancellationToken cancellationToken = default)
     {
         await _bookRepository.DeleteAllAsync(cancellationToken);

@@ -77,6 +77,17 @@ public class BookRepository : IBookRepository
         await _context.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var book = await _context.Books.FirstOrDefaultAsync(b => b.Id == id, cancellationToken);
+        
+        if (book == null)
+            return false;
+
+        _context.Books.Remove(book);
+        return true;
+    }
+
     public async Task DeleteAllAsync(CancellationToken cancellationToken = default)
     {
         await _context.Books.ExecuteDeleteAsync(cancellationToken);

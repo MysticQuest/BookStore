@@ -81,6 +81,23 @@ public class BooksController : ControllerBase
     }
 
     /// <summary>
+    /// Deletes a specific book by its unique identifier.
+    /// </summary>
+    [HttpDelete("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> DeleteBook(Guid id, CancellationToken cancellationToken)
+    {
+        var deleted = await _bookService.DeleteBookAsync(id, cancellationToken);
+
+        if (!deleted)
+            return NotFound(new { message = $"Book with ID '{id}' not found." });
+
+        return NoContent();
+    }
+
+    /// <summary>
     /// Deletes all books from the database. Only available in Development environment.
     /// </summary>
     [HttpDelete]

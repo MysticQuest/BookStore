@@ -1,7 +1,67 @@
-﻿@page "/"
+@page "/"
 
-<PageTitle>Home</PageTitle>
+<PageTitle>BookStore - Home</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 text-center">
+            <div class="mb-4">
+                <i class="bi bi-book-half" style="font-size: 5rem; color: #3498db;"></i>
+            </div>
+            <h1 class="display-4 fw-bold mb-3" style="color: #2c3e50;">
+                Welcome to BookStore
+            </h1>
+            <p class="lead text-muted mb-4">
+                Manage your Harry Potter book collection with ease. 
+                Track inventory, update prices, and sync with external sources.
+            </p>
+            <div class="d-flex justify-content-center gap-3">
+                <a href="books" class="btn btn-primary btn-lg px-4">
+                    <i class="bi bi-book me-2"></i>View Books
+                </a>
+            </div>
+        </div>
+    </div>
 
-Welcome to your new app.
+    <div class="row mt-5 pt-4 g-4">
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="bi bi-cloud-download" style="font-size: 2.5rem; color: #3498db;"></i>
+                    </div>
+                    <h5 class="card-title" style="color: #2c3e50;">Sync Books</h5>
+                    <p class="card-text text-muted">
+                        Fetch book data from the Potter API and automatically update your inventory.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="bi bi-boxes" style="font-size: 2.5rem; color: #27ae60;"></i>
+                    </div>
+                    <h5 class="card-title" style="color: #2c3e50;">Manage Inventory</h5>
+                    <p class="card-text text-muted">
+                        Track the number of copies available for each book in your store.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="bi bi-currency-euro" style="font-size: 2.5rem; color: #e74c3c;"></i>
+                    </div>
+                    <h5 class="card-title" style="color: #2c3e50;">Set Prices</h5>
+                    <p class="card-text text-muted">
+                        Update book prices with proper Euro formatting and validation.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

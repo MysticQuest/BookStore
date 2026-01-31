@@ -50,6 +50,12 @@ public interface IBookRepository
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Deletes a specific book by its unique identifier.
+    /// </summary>
+    /// <returns>True if the book was found and deleted, false otherwise.</returns>
+    Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Deletes all books from the database. For debugging purposes only.
     /// </summary>
     Task DeleteAllAsync(CancellationToken cancellationToken = default);

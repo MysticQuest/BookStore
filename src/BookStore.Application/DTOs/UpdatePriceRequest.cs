@@ -8,6 +8,7 @@ namespace BookStore.Application.DTOs;
 public class UpdatePriceRequest
 {
     [Required]
-    [Range(0, double.MaxValue, ErrorMessage = "Price must be a non-negative value.")]
+    [Range(0, 9999.99, ErrorMessage = "Price must be between 0 and 9999.99.")]
+    [RegularExpression(@"^\d+(\.\d{1,2})?$", ErrorMessage = "Price can have at most 2 decimal places.")]
     public decimal Price { get; set; }
 }
