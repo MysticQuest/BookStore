@@ -4,6 +4,8 @@ using BookStore.Infrastructure;
 using BookStore.Infrastructure.Data;
 using Hangfire;
 using Hangfire.InMemory;
+using HealthChecks.UI.Client;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -48,6 +50,9 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<AppDbContext>("database");
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
@@ -70,6 +75,11 @@ if (!app.Environment.IsDevelopment())
 app.UseCors("AllowBlazorClient");
 app.MapControllers();
 app.MapHub<BookHub>("/hubs/books");
+
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+});
 
 app.MapHangfireDashboard("/hangfire");
 
