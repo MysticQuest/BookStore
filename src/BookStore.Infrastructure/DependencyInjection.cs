@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Http.Resilience;
 
 namespace BookStore.Infrastructure;
 
@@ -32,7 +33,14 @@ public static class DependencyInjection
 
         services.AddScoped<IBookRepository, BookRepository>();
         services.AddScoped<IBookService, BookService>();
-        services.AddHttpClient<IBookFetchService, BookFetchService>();
+        services.AddHttpClient<IBookFetchService, BookFetchService>()
+            .AddStandardResilienceHandler(options =>
+            {
+                options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(10);
+                options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(30);
+                options.Retry.MaxRetryAttempts = 3;
+                options.Retry.Delay = TimeSpan.FromMilliseconds(500);
+            });
         services.Configure<BookFetchSettings>(
             configuration.GetSection(BookFetchSettings.SectionName));
 
