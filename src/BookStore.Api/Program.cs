@@ -13,9 +13,8 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var dbFolder = Path.Combine(
-    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-    "BookStore");
+var dbFolder = Environment.GetEnvironmentVariable("DB_PATH") 
+    ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BookStore");
 Directory.CreateDirectory(dbFolder);
 var dbPath = Path.Combine(dbFolder, "BookStore.db");
 
