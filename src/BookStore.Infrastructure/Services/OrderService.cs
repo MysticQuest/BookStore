@@ -84,11 +84,7 @@ public class OrderService : IOrderService
         var existingOrderBook = await _orderRepository.GetOrderBookAsync(orderId, request.BookId, cancellationToken);
         if (existingOrderBook != null)
         {
-            var totalQuantity = existingOrderBook.Quantity + request.Quantity;
-            if (totalQuantity > book.NumberOfCopies + existingOrderBook.Quantity)
-                return (false, $"Total quantity ({totalQuantity}) would exceed available copies ({book.NumberOfCopies + existingOrderBook.Quantity}) for book '{book.Title}'.");
-
-            existingOrderBook.Quantity = totalQuantity;
+            existingOrderBook.Quantity += request.Quantity;
             book.NumberOfCopies -= request.Quantity;
             order.TotalCost += request.Quantity * existingOrderBook.PriceAtPurchase;
         }
