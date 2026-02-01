@@ -10,6 +10,7 @@ using Hangfire.InMemory;
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -59,6 +60,20 @@ builder.Services.AddCors(options =>
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<AppDbContext>("database");
 
+builder.Services.AddRateLimiter(options =>
+{
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 100,
+                Window = TimeSpan.FromMinutes(1)
+            }));
+    
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+});
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
@@ -80,6 +95,7 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    app.MapHangfireDashboard("/hangfire");
 }
 
 if (!app.Environment.IsDevelopment())
@@ -88,6 +104,7 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseCors("AllowBlazorClient");
+app.UseRateLimiter();
 app.MapControllers();
 app.MapHub<BookHub>("/hubs/books");
 
@@ -95,8 +112,6 @@ app.MapHealthChecks("/health", new HealthCheckOptions
 {
     ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
 });
-
-app.MapHangfireDashboard("/hangfire");
 
 RecurringJob.AddOrUpdate<BookFetchJob>(
     "book-fetch-job",
