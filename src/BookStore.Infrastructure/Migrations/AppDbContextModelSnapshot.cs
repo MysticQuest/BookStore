@@ -61,7 +61,8 @@ namespace BookStore.Infrastructure.Migrations
                         .IsConcurrencyToken()
                         .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("BLOB");
+                        .HasColumnType("BLOB")
+                        .HasDefaultValueSql("randomblob(8)");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -99,7 +100,8 @@ namespace BookStore.Infrastructure.Migrations
                         .IsConcurrencyToken()
                         .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("BLOB");
+                        .HasColumnType("BLOB")
+                        .HasDefaultValueSql("randomblob(8)");
 
                     b.Property<decimal>("TotalCost")
                         .HasPrecision(18, 2)

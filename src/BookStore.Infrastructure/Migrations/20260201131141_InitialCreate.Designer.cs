@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BookStore.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260131130008_AddOrdersAndOrderBooks")]
-    partial class AddOrdersAndOrderBooks
+    [Migration("20260201131141_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -60,6 +60,13 @@ namespace BookStore.Infrastructure.Migrations
                     b.Property<DateTime?>("ReleaseDate")
                         .HasColumnType("TEXT");
 
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("BLOB")
+                        .HasDefaultValueSql("randomblob(8)");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -70,7 +77,12 @@ namespace BookStore.Infrastructure.Migrations
                     b.HasIndex("Number")
                         .IsUnique();
 
-                    b.ToTable("Books");
+                    b.ToTable("Books", t =>
+                        {
+                            t.HasCheckConstraint("CK_Book_NumberOfCopies", "[NumberOfCopies] >= 0 AND [NumberOfCopies] <= 100000");
+
+                            t.HasCheckConstraint("CK_Book_Price", "[Price] >= 0 AND [Price] <= 9999.99");
+                        });
                 });
 
             modelBuilder.Entity("BookStore.Domain.Entities.Order", b =>
@@ -86,6 +98,13 @@ namespace BookStore.Infrastructure.Migrations
 
                     b.Property<DateTime>("CreationDate")
                         .HasColumnType("TEXT");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("BLOB")
+                        .HasDefaultValueSql("randomblob(8)");
 
                     b.Property<decimal>("TotalCost")
                         .HasPrecision(18, 2)
@@ -115,7 +134,10 @@ namespace BookStore.Infrastructure.Migrations
 
                     b.HasIndex("BookId");
 
-                    b.ToTable("OrderBooks");
+                    b.ToTable("OrderBooks", t =>
+                        {
+                            t.HasCheckConstraint("CK_OrderBook_Quantity", "[Quantity] >= 1 AND [Quantity] <= 10000");
+                        });
                 });
 
             modelBuilder.Entity("BookStore.Domain.Entities.OrderBook", b =>

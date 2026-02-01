@@ -51,7 +51,8 @@ public class AppDbContext : DbContext
 
             entity.Property(e => e.RowVersion)
                 .IsRowVersion()
-                .IsConcurrencyToken();
+                .IsConcurrencyToken()
+                .HasDefaultValueSql("randomblob(8)");
 
             entity.ToTable(t =>
             {
@@ -79,7 +80,8 @@ public class AppDbContext : DbContext
 
             entity.Property(e => e.RowVersion)
                 .IsRowVersion()
-                .IsConcurrencyToken();
+                .IsConcurrencyToken()
+                .HasDefaultValueSql("randomblob(8)");
         });
 
         modelBuilder.Entity<OrderBook>(entity =>
