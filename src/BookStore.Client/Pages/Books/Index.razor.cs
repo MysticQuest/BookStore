@@ -11,6 +11,7 @@ public partial class Index : IAsyncDisposable
     [Inject] private IBookApiClient BookApi { get; set; } = default!;
     [Inject] private IJSRuntime JS { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
+    [Inject] private HttpClient Http { get; set; } = default!;
 
     private IEnumerable<BookViewModel>? _books;
     private bool _isLoading = true;
@@ -43,7 +44,7 @@ public partial class Index : IAsyncDisposable
 
     private async Task StartSignalRConnection()
     {
-        var hubUrl = Navigation.ToAbsoluteUri("/hubs/books");
+        var hubUrl = new Uri(Http.BaseAddress!, "/hubs/books");
 
         _hubConnection = new HubConnectionBuilder()
             .WithUrl(hubUrl)
