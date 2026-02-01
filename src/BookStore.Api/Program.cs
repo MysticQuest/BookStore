@@ -14,7 +14,7 @@ using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var dbFolder = Environment.GetEnvironmentVariable("DB_PATH") 
+var dbFolder = Environment.GetEnvironmentVariable("DB_PATH")
     ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BookStore");
 Directory.CreateDirectory(dbFolder);
 var dbPath = Path.Combine(dbFolder, "BookStore.db");
@@ -70,7 +70,7 @@ builder.Services.AddRateLimiter(options =>
                 PermitLimit = 100,
                 Window = TimeSpan.FromMinutes(1)
             }));
-    
+
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 });
 

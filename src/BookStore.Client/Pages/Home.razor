@@ -2,69 +2,162 @@
 
 <PageTitle>BookStore - Home</PageTitle>
 
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-8 text-center">
-            <div class="mb-4">
-                <i class="bi bi-book-half" style="font-size: 5rem; color: #3498db;"></i>
-            </div>
-            <h1 class="display-4 fw-bold mb-3" style="color: #2c3e50;">
-                Welcome to BookStore
-            </h1>
-            <p class="lead text-muted mb-4">
-                Manage your Harry Potter book collection with ease. 
-                Track inventory, update prices, and sync with external sources.
-            </p>
-            <div class="d-flex justify-content-center gap-3">
-                <a href="books" class="btn btn-primary btn-lg px-4">
-                    <i class="bi bi-book me-2"></i>View Books
-                </a>
-                <a href="orders" class="btn btn-outline-primary btn-lg px-4">
-                    <i class="bi bi-cart me-2"></i>View Orders
-                </a>
-            </div>
+<div class="home-container">
+    <div class="home-header">
+        <i class="bi bi-book-half home-icon"></i>
+        <h1 class="home-title">Welcome to BookStore</h1>
+        <p class="home-subtitle">
+            Manage your Harry Potter book collection with ease.
+            Track inventory, update prices, create orders, and enjoy real-time updates.
+        </p>
+        <div class="home-buttons">
+            <a href="books" class="btn btn-primary">
+                <i class="bi bi-book me-2"></i>View Books
+            </a>
+            <a href="orders" class="btn btn-outline-primary">
+                <i class="bi bi-cart me-2"></i>View Orders
+            </a>
         </div>
     </div>
 
-    <div class="row mt-5 pt-4 g-4">
-        <div class="col-md-4">
-            <div class="card h-100 border-0 shadow-sm">
-                <div class="card-body text-center p-4">
-                    <div class="mb-3">
-                        <i class="bi bi-cloud-download" style="font-size: 2.5rem; color: #3498db;"></i>
-                    </div>
-                    <h5 class="card-title" style="color: #2c3e50;">Sync Books</h5>
-                    <p class="card-text text-muted">
-                        Fetch book data from the Potter API and automatically update your inventory.
-                    </p>
-                </div>
-            </div>
+    <div class="feature-grid">
+        <div class="feature-card">
+            <i class="bi bi-cloud-download feature-icon" style="color: #3498db;"></i>
+            <h5 class="feature-title">Sync Books</h5>
+            <p class="feature-text">Fetch book data from the Potter API.</p>
         </div>
-        <div class="col-md-4">
-            <div class="card h-100 border-0 shadow-sm">
-                <div class="card-body text-center p-4">
-                    <div class="mb-3">
-                        <i class="bi bi-boxes" style="font-size: 2.5rem; color: #27ae60;"></i>
-                    </div>
-                    <h5 class="card-title" style="color: #2c3e50;">Manage Inventory</h5>
-                    <p class="card-text text-muted">
-                        Track the number of copies available for each book in your store.
-                    </p>
-                </div>
-            </div>
+        <div class="feature-card">
+            <i class="bi bi-boxes feature-icon" style="color: #27ae60;"></i>
+            <h5 class="feature-title">Manage Inventory</h5>
+            <p class="feature-text">Track copies available for each book.</p>
         </div>
-        <div class="col-md-4">
-            <div class="card h-100 border-0 shadow-sm">
-                <div class="card-body text-center p-4">
-                    <div class="mb-3">
-                        <i class="bi bi-currency-euro" style="font-size: 2.5rem; color: #e74c3c;"></i>
-                    </div>
-                    <h5 class="card-title" style="color: #2c3e50;">Set Prices</h5>
-                    <p class="card-text text-muted">
-                        Update book prices with proper Euro formatting and validation.
-                    </p>
-                </div>
-            </div>
+        <div class="feature-card">
+            <i class="bi bi-currency-euro feature-icon" style="color: #e74c3c;"></i>
+            <h5 class="feature-title">Set Prices</h5>
+            <p class="feature-text">Update prices with Euro formatting.</p>
+        </div>
+        <div class="feature-card">
+            <i class="bi bi-cart-plus feature-icon" style="color: #9b59b6;"></i>
+            <h5 class="feature-title">Create Orders</h5>
+            <p class="feature-text">Add books with quantity tracking.</p>
+        </div>
+        <div class="feature-card">
+            <i class="bi bi-broadcast feature-icon" style="color: #f39c12;"></i>
+            <h5 class="feature-title">Real-time Updates</h5>
+            <p class="feature-text">Live notifications via SignalR.</p>
+        </div>
+        <div class="feature-card">
+            <i class="bi bi-arrow-repeat feature-icon" style="color: #1abc9c;"></i>
+            <h5 class="feature-title">Auto Sync</h5>
+            <p class="feature-text">Recurring sync via Hangfire.</p>
         </div>
     </div>
 </div>
+
+<style>
+    .home-container {
+        height: calc(100vh - 12rem);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 1rem;
+        box-sizing: border-box;
+    }
+
+    .home-header {
+        text-align: center;
+        flex-shrink: 0;
+        margin-bottom: 1.5rem;
+        width: 100%;
+        max-width: 800px;
+    }
+
+    .home-icon {
+        font-size: clamp(2rem, 5vw, 4rem);
+        color: #3498db;
+    }
+
+    .home-title {
+        font-size: clamp(1.5rem, 4vw, 2.5rem);
+        font-weight: bold;
+        color: #2c3e50;
+        margin: 0.5rem 0;
+    }
+
+    .home-subtitle {
+        font-size: clamp(0.85rem, 1.5vw, 1rem);
+        color: #6c757d;
+        margin-bottom: 0.75rem;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .home-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .home-buttons .btn {
+        padding: 0.5rem 1rem;
+        font-size: clamp(0.8rem, 1.2vw, 0.95rem);
+    }
+
+    .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 0.75rem;
+        width: 100%;
+        max-width: 900px;
+        align-content: center;
+    }
+
+    .feature-card {
+        background: white;
+        border-radius: 0.5rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        padding: clamp(0.75rem, 2vw, 1.25rem);
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .feature-icon {
+        font-size: clamp(1.5rem, 3vw, 2.5rem);
+        margin-bottom: 0.5rem;
+    }
+
+    .feature-title {
+        font-size: clamp(0.85rem, 1.3vw, 1.1rem);
+        color: #2c3e50;
+        margin: 0.25rem 0;
+    }
+
+    .feature-text {
+        font-size: clamp(0.75rem, 1.1vw, 0.9rem);
+        color: #6c757d;
+        margin: 0;
+        line-height: 1.3;
+    }
+
+    @@media (max-height: 500px) {
+        .home-subtitle {
+            display: none;
+        }
+
+        .feature-text {
+            display: none;
+        }
+    }
+
+    @@media (min-width: 768px) {
+        .feature-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+</style>
