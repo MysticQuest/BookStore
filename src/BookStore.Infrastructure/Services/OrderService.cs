@@ -1,4 +1,5 @@
 using BookStore.Application.DTOs;
+using BookStore.Application.Events;
 using BookStore.Application.Interfaces;
 using BookStore.Domain.Entities;
 using BookStore.Infrastructure.Data;
@@ -16,9 +17,11 @@ public class OrderService : IOrderService
     private readonly AppDbContext _dbContext;
     private readonly ILogger<OrderService> _logger;
 
+    public event EventHandler<OrderChangedEventArgs>? OrderChanged;
+
     public OrderService(
-        IOrderRepository orderRepository, 
-        IBookRepository bookRepository, 
+        IOrderRepository orderRepository,
+        IBookRepository bookRepository,
         AppDbContext dbContext,
         ILogger<OrderService> logger)
     {
@@ -26,6 +29,29 @@ public class OrderService : IOrderService
         _bookRepository = bookRepository;
         _dbContext = dbContext;
         _logger = logger;
+    }
+
+    private async Task RefreshOrderPricesAsync(Guid orderId, CancellationToken cancellationToken = default)
+    {
+        var order = await _orderRepository.GetByIdWithBooksAsync(orderId, cancellationToken);
+        if (order == null) return;
+
+        decimal totalCost = 0;
+        foreach (var orderBook in order.OrderBooks)
+        {
+            var book = await _bookRepository.GetByIdAsync(orderBook.BookId, cancellationToken);
+            if (book != null)
+            {
+                orderBook.PriceAtPurchase = book.Price;
+                totalCost += orderBook.Quantity * book.Price;
+            }
+        }
+        order.TotalCost = totalCost;
+    }
+
+    private void RaiseOrderChanged(Guid orderId)
+    {
+        OrderChanged?.Invoke(this, new OrderChangedEventArgs(orderId));
     }
 
     public async Task<IEnumerable<OrderDto>> GetAllOrdersAsync(CancellationToken cancellationToken = default)
@@ -69,7 +95,7 @@ public class OrderService : IOrderService
     public async Task<IEnumerable<OrderBookDto>> GetOrderBooksAsync(Guid orderId, CancellationToken cancellationToken = default)
     {
         var order = await _orderRepository.GetByIdWithBooksAsync(orderId, cancellationToken);
-        
+
         if (order == null)
             return Enumerable.Empty<OrderBookDto>();
 
@@ -83,8 +109,8 @@ public class OrderService : IOrderService
     }
 
     public async Task<(bool Success, string? ErrorMessage)> AddBookToOrderAsync(
-        Guid orderId, 
-        AddBookToOrderRequest request, 
+        Guid orderId,
+        AddBookToOrderRequest request,
         CancellationToken cancellationToken = default)
     {
         var order = await _orderRepository.GetByIdAsync(orderId, cancellationToken);
@@ -109,8 +135,6 @@ public class OrderService : IOrderService
             {
                 _logger.LogDebug("Updating existing order book entry for order {OrderId}, book {BookId}", orderId, request.BookId);
                 existingOrderBook.Quantity += request.Quantity;
-                book.NumberOfCopies -= request.Quantity;
-                order.TotalCost += request.Quantity * existingOrderBook.PriceAtPurchase;
             }
             else
             {
@@ -124,12 +148,15 @@ public class OrderService : IOrderService
                 };
 
                 await _orderRepository.AddOrderBookAsync(orderBook, cancellationToken);
-                book.NumberOfCopies -= request.Quantity;
-                order.TotalCost += request.Quantity * book.Price;
             }
+
+            book.NumberOfCopies -= request.Quantity;
+            await RefreshOrderPricesAsync(orderId, cancellationToken);
 
             await _dbContext.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
+
+            RaiseOrderChanged(orderId);
             return (true, null);
         }
         catch (Exception ex)
@@ -160,13 +187,14 @@ public class OrderService : IOrderService
                 book.NumberOfCopies += orderBook.Quantity;
             }
 
-            order.TotalCost -= orderBook.Quantity * orderBook.PriceAtPurchase;
-            if (order.TotalCost < 0) order.TotalCost = 0;
-
             _orderRepository.RemoveOrderBook(orderBook);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
+            await RefreshOrderPricesAsync(orderId, cancellationToken);
             await _dbContext.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
+            RaiseOrderChanged(orderId);
             return true;
         }
         catch (Exception ex)

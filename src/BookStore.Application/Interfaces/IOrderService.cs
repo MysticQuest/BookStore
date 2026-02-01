@@ -1,4 +1,5 @@
 using BookStore.Application.DTOs;
+using BookStore.Application.Events;
 
 namespace BookStore.Application.Interfaces;
 
@@ -7,6 +8,11 @@ namespace BookStore.Application.Interfaces;
 /// </summary>
 public interface IOrderService
 {
+    /// <summary>
+    /// Event raised when an order is modified (book added/removed).
+    /// </summary>
+    event EventHandler<OrderChangedEventArgs>? OrderChanged;
+
     /// <summary>
     /// Gets all orders (summary only).
     /// </summary>
