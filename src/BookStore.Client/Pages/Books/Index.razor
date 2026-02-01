@@ -2,7 +2,7 @@
 @using Microsoft.AspNetCore.SignalR.Client
 @inject IBookApiClient BookApi
 @inject IJSRuntime JS
-@inject IConfiguration Configuration
+@inject NavigationManager Navigation
 @implements IAsyncDisposable
 
 <PageTitle>Books - BookStore</PageTitle>
@@ -285,8 +285,7 @@
 
     private async Task StartSignalRConnection()
     {
-        var apiBaseAddress = Configuration["ApiBaseAddress"] ?? "http://localhost:5029";
-        var hubUrl = $"{apiBaseAddress}/hubs/books";
+        var hubUrl = Navigation.ToAbsoluteUri("/hubs/books");
 
         _hubConnection = new HubConnectionBuilder()
             .WithUrl(hubUrl)

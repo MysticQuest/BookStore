@@ -113,10 +113,14 @@ app.MapHealthChecks("/health", new HealthCheckOptions
     ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
 });
 
-RecurringJob.AddOrUpdate<BookFetchJob>(
-    "book-fetch-job",
-    job => job.ExecuteAsync(CancellationToken.None),
-    Cron.Minutely);
+using (var scope = app.Services.CreateScope())
+{
+    var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+    recurringJobManager.AddOrUpdate<BookFetchJob>(
+        "book-fetch-job",
+        job => job.ExecuteAsync(CancellationToken.None),
+        Cron.Minutely);
+}
 
 app.Run();
 
