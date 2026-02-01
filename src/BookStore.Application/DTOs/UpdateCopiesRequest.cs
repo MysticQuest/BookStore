@@ -8,6 +8,6 @@ namespace BookStore.Application.DTOs;
 public class UpdateCopiesRequest
 {
     [Required]
-    [Range(0, int.MaxValue, ErrorMessage = "Number of copies must be a non-negative value.")]
+    [Range(0, 100000, ErrorMessage = "Number of copies must be between 0 and 100,000.")]
     public int NumberOfCopies { get; set; }
 }

@@ -235,6 +235,14 @@ public class OrderServiceTests
         var order = new Order { Id = orderId, Address = "Test", TotalCost = 0 };
         var book = new Book { Id = bookId, Title = "Test Book", NumberOfCopies = 10, Price = 15.00m };
         var request = new AddBookToOrderRequest { BookId = bookId, Quantity = 3 };
+        var newOrderBook = new OrderBook { OrderId = orderId, BookId = bookId, Quantity = 3, PriceAtPurchase = 15.00m };
+        var orderWithBooks = new Order 
+        { 
+            Id = orderId, 
+            Address = "Test", 
+            TotalCost = 0,
+            OrderBooks = new List<OrderBook> { newOrderBook }
+        };
 
         _orderRepositoryMock.Setup(r => r.GetByIdAsync(orderId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(order);
@@ -242,6 +250,8 @@ public class OrderServiceTests
             .ReturnsAsync(book);
         _orderRepositoryMock.Setup(r => r.GetOrderBookAsync(orderId, bookId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((OrderBook?)null);
+        _orderRepositoryMock.Setup(r => r.GetByIdWithBooksAsync(orderId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(orderWithBooks);
 
         // Act
         var (success, errorMessage) = await _sut.AddBookToOrderAsync(orderId, request);
@@ -250,7 +260,7 @@ public class OrderServiceTests
         success.Should().BeTrue();
         errorMessage.Should().BeNull();
         book.NumberOfCopies.Should().Be(7); // 10 - 3
-        order.TotalCost.Should().Be(45.00m); // 3 * 15.00
+        orderWithBooks.TotalCost.Should().Be(45.00m); // 3 * 15.00
         _orderRepositoryMock.Verify(r => r.AddOrderBookAsync(It.IsAny<OrderBook>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -270,6 +280,13 @@ public class OrderServiceTests
             PriceAtPurchase = 15.00m 
         };
         var request = new AddBookToOrderRequest { BookId = bookId, Quantity = 2 };
+        var orderWithBooks = new Order 
+        { 
+            Id = orderId, 
+            Address = "Test", 
+            TotalCost = 30.00m,
+            OrderBooks = new List<OrderBook> { existingOrderBook }
+        };
 
         _orderRepositoryMock.Setup(r => r.GetByIdAsync(orderId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(order);
@@ -277,6 +294,8 @@ public class OrderServiceTests
             .ReturnsAsync(book);
         _orderRepositoryMock.Setup(r => r.GetOrderBookAsync(orderId, bookId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(existingOrderBook);
+        _orderRepositoryMock.Setup(r => r.GetByIdWithBooksAsync(orderId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(orderWithBooks);
 
         // Act
         var (success, errorMessage) = await _sut.AddBookToOrderAsync(orderId, request);
@@ -285,7 +304,7 @@ public class OrderServiceTests
         success.Should().BeTrue();
         existingOrderBook.Quantity.Should().Be(4); // 2 + 2
         book.NumberOfCopies.Should().Be(3); // 5 - 2
-        order.TotalCost.Should().Be(60.00m); // 30 + (2 * 15)
+        orderWithBooks.TotalCost.Should().Be(60.00m); // 4 * 15 = 60
         _orderRepositoryMock.Verify(r => r.AddOrderBookAsync(It.IsAny<OrderBook>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -304,6 +323,13 @@ public class OrderServiceTests
             Quantity = 3, 
             PriceAtPurchase = 15.00m 
         };
+        var orderWithBooks = new Order 
+        { 
+            Id = orderId, 
+            Address = "Test", 
+            TotalCost = 45.00m,
+            OrderBooks = new List<OrderBook>()
+        };
 
         _orderRepositoryMock.Setup(r => r.GetByIdAsync(orderId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(order);
@@ -311,6 +337,8 @@ public class OrderServiceTests
             .ReturnsAsync(orderBook);
         _bookRepositoryMock.Setup(r => r.GetByIdAsync(bookId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(book);
+        _orderRepositoryMock.Setup(r => r.GetByIdWithBooksAsync(orderId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(orderWithBooks);
 
         // Act
         var result = await _sut.RemoveBookFromOrderAsync(orderId, bookId);
@@ -318,7 +346,7 @@ public class OrderServiceTests
         // Assert
         result.Should().BeTrue();
         book.NumberOfCopies.Should().Be(10); // 7 + 3
-        order.TotalCost.Should().Be(0); // 45 - (3 * 15)
+        orderWithBooks.TotalCost.Should().Be(0); // No books left
         _orderRepositoryMock.Verify(r => r.RemoveOrderBook(orderBook), Times.Once);
     }
 

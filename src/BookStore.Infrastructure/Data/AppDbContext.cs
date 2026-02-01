@@ -52,6 +52,12 @@ public class AppDbContext : DbContext
             entity.Property(e => e.RowVersion)
                 .IsRowVersion()
                 .IsConcurrencyToken();
+
+            entity.ToTable(t =>
+            {
+                t.HasCheckConstraint("CK_Book_NumberOfCopies", "[NumberOfCopies] >= 0 AND [NumberOfCopies] <= 100000");
+                t.HasCheckConstraint("CK_Book_Price", "[Price] >= 0 AND [Price] <= 9999.99");
+            });
         });
 
         modelBuilder.Entity<Order>(entity =>
@@ -95,6 +101,11 @@ public class AppDbContext : DbContext
                 .WithMany(b => b.OrderBooks)
                 .HasForeignKey(e => e.BookId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            entity.ToTable(t =>
+            {
+                t.HasCheckConstraint("CK_OrderBook_Quantity", "[Quantity] >= 1 AND [Quantity] <= 10000");
+            });
         });
     }
 }
