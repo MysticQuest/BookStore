@@ -7,12 +7,15 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-var apiBaseAddress = builder.Configuration["ApiBaseAddress"] 
-    ?? "http://localhost:5029";
+var apiBaseAddress = builder.Configuration["ApiBaseAddress"];
+if (string.IsNullOrEmpty(apiBaseAddress) || apiBaseAddress == "/")
+{
+    apiBaseAddress = builder.HostEnvironment.BaseAddress;
+}
 
-builder.Services.AddScoped(sp => new HttpClient 
-{ 
-    BaseAddress = new Uri(apiBaseAddress) 
+builder.Services.AddScoped(sp => new HttpClient
+{
+    BaseAddress = new Uri(apiBaseAddress)
 });
 
 builder.Services.AddScoped<IBookApiClient, BookApiClient>();
