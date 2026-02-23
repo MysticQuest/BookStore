@@ -39,11 +39,10 @@ public class OrderService : IOrderService
         decimal totalCost = 0;
         foreach (var orderBook in order.OrderBooks)
         {
-            var book = await _bookRepository.GetByIdAsync(orderBook.BookId, cancellationToken);
-            if (book != null)
+            if (orderBook.Book is not null)
             {
-                orderBook.PriceAtPurchase = book.Price;
-                totalCost += orderBook.Quantity * book.Price;
+                orderBook.PriceAtPurchase = orderBook.Book.Price;
+                totalCost += orderBook.Quantity * orderBook.Book.Price;
             }
         }
         order.TotalCost = totalCost;
@@ -180,11 +179,10 @@ public class OrderService : IOrderService
         await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
         try
         {
-            var book = await _bookRepository.GetByIdAsync(bookId, cancellationToken);
-            if (book != null)
+            if (orderBook.Book is not null)
             {
                 _logger.LogDebug("Restoring {Quantity} copies to book {BookId}", orderBook.Quantity, bookId);
-                book.NumberOfCopies += orderBook.Quantity;
+                orderBook.Book.NumberOfCopies += orderBook.Quantity;
             }
 
             _orderRepository.RemoveOrderBook(orderBook);
@@ -217,11 +215,8 @@ public class OrderService : IOrderService
             _logger.LogDebug("Restoring inventory for {Count} books from order {OrderId}", order.OrderBooks.Count, id);
             foreach (var orderBook in order.OrderBooks)
             {
-                var book = await _bookRepository.GetByIdAsync(orderBook.BookId, cancellationToken);
-                if (book != null)
-                {
-                    book.NumberOfCopies += orderBook.Quantity;
-                }
+                if (orderBook.Book is not null)
+                    orderBook.Book.NumberOfCopies += orderBook.Quantity;
             }
 
             await _orderRepository.DeleteAsync(id, cancellationToken);
