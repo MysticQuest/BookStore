@@ -68,16 +68,6 @@ src/
 └── BookStore.Client/         # Blazor WebAssembly UI
 ```
 
-## Assumptions & Tradeoffs
-
-- Services could be placed in the Application layer and abstractions in a separate Application.Contracts project for cleaner separation of infrastructure (repos, migrations, dbContext) and app services.
-- When the price of a book that exists in an order changes, the order does not get updated as I assume it has been finalized. However, if something changes in the order itself, the book prices get updated.
-- I would use a single endpoint for updating book price and copies instead of two separate ones to uphold CRUD and since they are only two variables.
-- In the current implementation, I would require at least one book before saving the order.
-- Auto-fetch for books is not triggered when landing on the site because there is a dedicated button for it. 
-- I use in-memory Hangfire as I assume that the one minute recurring job's state doesn't need to persist.
-- Used sqlite for simplicity, although I came across constraints with the migration transaction.
-
 ## License
 
 MIT
